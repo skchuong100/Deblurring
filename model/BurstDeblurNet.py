@@ -17,11 +17,16 @@ from torchvision.io import read_image
 from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision.transforms.functional import resize, crop
 from tqdm import tqdm
+from reformer_pytorch import Reformer
 # 1) add this import near the other imports
 from torchvision.transforms.functional import gaussian_blur
-
+import random
 import numpy as np
 from blur_generator import generate_synthetic_burst, add_gaussian_noise, apply_motion_blur
+# add near your other imports
+from pytorch_msssim import ssim
+from torch.cuda.amp import autocast, GradScaler
+import math
 
 
 g_sigma_max = 7.0
@@ -52,49 +57,96 @@ class BlurPairDataset(Dataset):
         burst=torch.stack(self.burst_gen(b,num_variants=self.T),0)
         return burst,s
 
-# =========================
-#  MODEL — 2‑level U‑Net
-# =========================
+from reformer_pytorch import Reformer
+
 class BurstDeblurNet(nn.Module):
-    def __init__(self, in_ch=3, base=64, num_frames=7):
+    """
+    Two-scale U-Net with Reformer attention:
+      • Captures long-range blur streaks without O(N²) cost
+      • Keeps parameter count close to original (~7 M with base=64)
+      • Accepts a burst (B,T,C,H,W) and returns one sharp frame
+    """
+    def __init__(self, in_ch=3, base=64, heads=4, bucket=64, num_frames=7):
         super().__init__()
-        def enc(cin, cout):
-            return nn.Sequential(nn.Conv2d(cin,cout,3,1,1), nn.ReLU(inplace=True),
-                                 nn.Conv2d(cout,cout,3,1,1), nn.ReLU(inplace=True))
-        self.enc1 = enc(in_ch, base)
+        # ---------- encoder level 1 ----------
+        self.conv1 = nn.Conv2d(in_ch, base, 3, 1, 1)
+        self.ref1 = nn.Identity()   # ← no attention at 256²
         self.pool1 = nn.MaxPool2d(2)
-        self.enc2 = enc(base, base*2)
+
+        # ---------- encoder level 2 ----------
+        self.conv2 = nn.Conv2d(base, base*2, 3, 1, 1)
+        self.ref2 = nn.Identity()   # ← no attention at 128²
         self.pool2 = nn.MaxPool2d(2)
-        self.enc3 = enc(base*2, base*4)
-        self.fuse3d = nn.Conv3d(base*4, base*4, kernel_size=(num_frames,1,1), bias=False)
-        self.se = nn.Sequential(nn.AdaptiveAvgPool2d(1),
-                                nn.Conv2d(base*4, base*4//8,1), nn.ReLU(inplace=True),
-                                nn.Conv2d(base*4//8, base*4,1), nn.Sigmoid())
-        def dec(cin, cout):
-            return nn.Sequential(nn.Conv2d(cin,cout,3,1,1), nn.ReLU(inplace=True),
-                                 nn.Conv2d(cout,cout,3,1,1), nn.ReLU(inplace=True))
-        self.up1 = nn.ConvTranspose2d(base*4, base*2, 4,2,1)
-        self.dec1 = dec(base*4, base*2)
-        self.up2 = nn.ConvTranspose2d(base*2, base, 4,2,1)
-        self.dec2 = dec(base*2, base)
-        self.out_conv = nn.Sequential(nn.Conv2d(base, in_ch, 3,1,1), nn.Sigmoid())
+
+        # ---------- bottleneck ----------
+        self.conv3 = nn.Conv2d(base*2, base*4, 3, 1, 1)
+        self.ref3 = Reformer(       # attention runs at 64² tokens
+            dim         = base*4,
+            depth       = 4,
+            heads       = heads,
+            bucket_size = bucket,   # 64 is OK for 4096 tokens
+            causal      = False)
+
+        # ---------- decoder ----------
+        self.up1  = nn.ConvTranspose2d(base*4, base*2, 4, 2, 1)
+        self.dec1 = nn.Conv2d(base*4, base*2, 3, 1, 1)
+
+        self.up2  = nn.ConvTranspose2d(base*2, base, 4, 2, 1)
+        self.dec2 = nn.Conv2d(base*2, base, 3, 1, 1)
+
+        self.out  = nn.Conv2d(base, in_ch, 3, 1, 1)
+
+    @staticmethod
+    def _map2seq(x):
+        # (B,C,H,W) → (B, H*W, C)
+        return x.permute(0, 2, 3, 1).reshape(x.size(0), -1, x.size(1))
+
+    @staticmethod
+    def _seq2map(x, H, W):
+        # (B, H*W, C) → (B,C,H,W)
+        return x.reshape(x.size(0), H, W, -1).permute(0, 3, 1, 2)
+
+    # ---------- forward ----------
     def forward(self, burst):
-        B,T,C,H,W = burst.shape
+        B, T, C, H, W = burst.shape
         x = burst.view(B*T, C, H, W)
-        s1 = self.enc1(x); p1 = self.pool1(s1)
-        s2 = self.enc2(p1); p2 = self.pool2(s2)
-        bott = self.enc3(p2)
-        bt = bott.view(B,T,-1,H//4,W//4).permute(0,2,1,3,4)
-        fused = self.fuse3d(bt).squeeze(2); fused = fused*self.se(fused)
-        skip2 = s2.view(B,T,-1,H//2,W//2).max(dim=1).values
-        skip1 = s1.view(B,T,-1,H   ,W   ).max(dim=1).values
-        u1 = self.up1(fused); d1 = self.dec1(torch.cat([u1,skip2],1))
-        u2 = self.up2(d1);   d2 = self.dec2(torch.cat([u2,skip1],1))
-        return self.out_conv(d2)
+
+        e1 = F.relu(self.conv1(x))
+        seq = self._map2seq(e1)          # use self._
+        seq = self.ref1(seq)
+        e1  = self._seq2map(seq, H, W)
+        p1  = self.pool1(e1)
+
+        e2 = F.relu(self.conv2(p1))
+        seq = self._map2seq(e2)
+        seq = self.ref2(seq)
+        e2  = self._seq2map(seq, H//2, W//2)
+        p2  = self.pool2(e2)
+
+        b   = F.relu(self.conv3(p2))
+        seq = self._map2seq(b)
+        seq = self.ref3(seq)
+        b   = self._seq2map(seq, H//4, W//4)
+
+        d1  = self.up1(b)
+        d1  = F.relu(self.dec1(torch.cat([d1, e2], dim=1)))
+        d2  = self.up2(d1)
+        d2  = F.relu(self.dec2(torch.cat([d2, e1], dim=1)))
+
+        sharp = torch.sigmoid(self.out(d2))
+        return sharp.view(B, T, C, H, W)[:, 0]
 
 # ===========================================
 #  TRAIN & SAVE (scheduler + checkpoints)
 # ===========================================
+
+# --- burst generators that ARE picklable -------------------
+def burst_gen_synth(img, num_variants=7):
+    return synth_burst(img, num_variants)
+
+def burst_gen_identity(img, num_variants=1):
+    return [img]            # single-frame “burst”
+# -----------------------------------------------------------
 
 
 def sobel(img: torch.Tensor) -> torch.Tensor:
@@ -133,113 +185,241 @@ def synth_burst(img: torch.Tensor, num_variants: int = 7):
         burst.append(final)
     return burst
 
-# ------------------------------------------------------------------
-#  Replace your current train_dataset() with this version
-# ------------------------------------------------------------------
-def train_dataset(blur_dir, sharp_dir, epochs=100, batch=4, lr=1e-4, device=None):
-    global g_sigma_max, motion_k_choices
+
+def cutblur(img_blur, img_sharp, alpha=0.7):
+    """
+    Half the time, mix a sharp patch into blur (or vice-versa).
+    img_blur, img_sharp: (C,H,W) in [0,1]
+    Returns two tensors: mixed_input, mixed_target.
+    """
+    if random.random() > 0.5:
+        return img_blur, img_sharp          # no change
+    _, h, w = img_blur.shape
+    cut_ratio = random.uniform(0.3, alpha)
+    ch, cw   = int(h * cut_ratio), int(w * cut_ratio)
+    cy, cx   = random.randint(0, h - ch), random.randint(0, w - cw)
+    mixed_in  = img_blur.clone()
+    mixed_tg  = img_sharp.clone()
+    if random.random() < 0.5:   # paste SHARP patch into BLUR
+        mixed_in[:, cy:cy+ch, cx:cx+cw] = img_sharp[:, cy:cy+ch, cx:cx+cw]
+    else:                       # paste BLUR patch into SHARP
+        mixed_tg[:, cy:cy+ch, cx:cx+cw] = img_blur[:, cy:cy+ch, cx:cx+cw]
+    return mixed_in, mixed_tg
+
+# ---------------- PatchGAN discriminator ----------------
+class PatchDiscriminator(nn.Module):
+    """3-layer 70×70 PatchGAN (very light)."""
+    def __init__(self, ch_in=3, base=64):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(ch_in,   base,     4, 2, 1), nn.LeakyReLU(0.2, True),
+            nn.Conv2d(base,    base*2,   4, 2, 1), nn.BatchNorm2d(base*2), nn.LeakyReLU(0.2, True),
+            nn.Conv2d(base*2,  base*4,   4, 2, 1), nn.BatchNorm2d(base*4), nn.LeakyReLU(0.2, True),
+            nn.Conv2d(base*4,  1,        3, 1, 1)   # logits
+        )
+    def forward(self, x):
+        return self.net(x)
+
+
+# -------------------- tiny helper --------------------
+def rand_crop(t: torch.Tensor, top, left, h, w):
+    return t[..., top:top + h, left:left + w]
+# -----------------------------------------------------
+
+def train_dataset(
+        blur_dir, sharp_dir,
+        epochs_pre=60, epochs_ft=40,
+        batch=2,
+        lr_pre=1e-4, lr_ft=5e-5,
+        prog_epochs=20,            # 1-20 → 128², then 256²
+        device=None):
 
     device = torch.device(device) if device else torch.device(
         "cuda" if torch.cuda.is_available() else "cpu")
     print("Using", device)
 
-    # ---- curriculum parameters (reset each run) ----
-    g_sigma_max      = 7.0
-    motion_k_choices = [7, 11, 15, 21]
-    curriculum_unlocked = False
+    # -------- backbone + GAN --------
+    model = BurstDeblurNet(base=64, heads=4, bucket=64).to(device)
+    D     = PatchDiscriminator().to(device)
+    d_opt = optim.Adam(D.parameters(), lr=2e-4, betas=(0.5, 0.999))
+    bce   = nn.BCEWithLogitsLoss()
+    λ_adv = 0.005
+    adv_on = False                # switch on after LPIPS < 0.55
 
-    # ---- model & optimiser ----
-    model = BurstDeblurNet().to(device)
-    opt   = optim.Adam(model.parameters(), lr=lr, weight_decay=0.0)  # wd added later if needed
-    cos_lr = optim.lr_scheduler.CosineAnnealingLR(
-        opt, T_max=max(1, epochs // 2), eta_min=2.5e-6)  # lower floor
-
-    # ---- data ----
-    full = BlurPairDataset(blur_dir, sharp_dir, synth_burst,
-                           img_size=(256, 256), T=7, crop_size=224)
-    val_sz   = 50 if len(full) > 100 else int(0.1 * len(full))
-    train_ds, val_ds = random_split(full, [len(full) - val_sz, val_sz],
-                                    generator=torch.Generator().manual_seed(0))
-    pin = device.type == 'cuda'
-    train_ld = DataLoader(train_ds, batch, True, num_workers=2, pin_memory=pin)
-    val_ld   = DataLoader(val_ds,  batch, False, num_workers=2, pin_memory=pin)
-
-    # ---- losses ----
     import lpips; from pytorch_msssim import ms_ssim
     lpips_fn = lpips.LPIPS(net='vgg').to(device)
-    best_lpips = float('inf')
-    reg_added  = False            # tracks if over-fit response already applied
 
-    for epoch in range(1, epochs + 1):
-        # ========== TRAIN ==========
-        model.train()
-        run_loss = run_lpips = 0.0
-        edge_w   = 0.02 if epoch < 40 else 0.04
+    # --------------------------------------------------
+    def run_phase(name, epochs, lr, burst_gen, T, ckpt):
+        nonlocal model, adv_on
+        best_lpips = float('inf')
 
-        for burst, sharp in tqdm(train_ld, desc=f"Ep {epoch}/{epochs}"):
-            burst, sharp = burst.to(device), sharp.to(device)
-            pred = model(burst)
+        g_opt  = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
+        sched  = optim.lr_scheduler.CosineAnnealingLR(
+                    g_opt, T_max=max(1, epochs // 2), eta_min=lr*0.01)
+        scaler = GradScaler()
 
-            lp   = lpips_fn(pred, sharp).mean()
-            ss   = 1 - ms_ssim(pred, sharp, data_range=1.0)
-            ed   = F.l1_loss(sobel(pred), sobel(sharp))
-            loss = 0.45 * lp + 0.45 * ss + edge_w * ed
+        prog_epochs = 15          # switch to 256 crop after epoch-15
 
-            opt.zero_grad(); loss.backward(); opt.step()
+        print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
 
-            run_loss  += loss.item()
-            run_lpips += lp.item()
+        for ep in range(1, epochs+1):
+            crop_sz = 128 if ep <= prog_epochs else 256
 
-        n_batches  = len(train_ld)
-        tr_loss    = run_loss  / n_batches
-        tr_lpips   = run_lpips / n_batches
+            # one-time LR boost at crop-switch
+            if ep == prog_epochs + 1:
+                for g in g_opt.param_groups:
+                    g["lr"] = 5e-5
+                print(f"🔄  LR reset to 5e-5 at epoch {ep} (crop 256)")
 
-        # ========== VALIDATE ==========
-        model.eval()
-        v_lpips = 0.0
-        with torch.no_grad():
-            for b, s in val_ld:
-                b, s = b.to(device), s.to(device)
-                p    = model(b)
-                v_lpips += lpips_fn(p, s).sum().item()
-        v_lpips /= len(val_ds)
+            # rebuild loaders ----------------------------------------------------
+            full = BlurPairDataset(blur_dir, sharp_dir, burst_gen,
+                                img_size=(256,256), T=T, crop_size=None)
+            val_sz = 50 if len(full)>100 else int(0.1*len(full))
+            tr_ds, va_ds = random_split(full, [len(full)-val_sz, val_sz],
+                                        generator=torch.Generator().manual_seed(0))
+            pin = device.type=='cuda'
+            tr_ld = DataLoader(tr_ds, batch_size=batch, shuffle=True,
+                            num_workers=2, pin_memory=pin)
+            va_ld = DataLoader(va_ds, batch_size=batch, shuffle=False,
+                            num_workers=2, pin_memory=pin)
 
-        # ---- GAP & over-fit response ----
-        lpips_gap = tr_lpips - v_lpips        # positive gap => train better than val
+            # --------------------------------------------------
+    # --------------------------------------------------
+    def run_phase(name, epochs, lr, burst_gen, T, ckpt):
+        """
+        * train loss = SSIM + edge-L1  + sparse-LPIPS (0.10 every 4 steps)
+        * GAN turns on automatically at 256-crop with λ_adv=0.002
+        * batch=1, accum_steps=2  ⇒ effective batch-2
+        """
+        nonlocal model, adv_on
+        best_lpips = float("inf")
 
-        if not reg_added and lpips_gap > 0.03:
-            print(f"⚠️  Over-fit trigger (LPIPS gap {lpips_gap:.3f}) – "
-                  "halving LR & adding weight-decay")
-            for g in opt.param_groups:
-                g['lr'] *= 0.5
-                g['weight_decay'] = 1e-4
-            reg_added = True
+        g_opt = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
+        sched = optim.lr_scheduler.CosineAnnealingLR(
+            g_opt, T_max=max(1, epochs // 2), eta_min=lr * 0.01
+        )
 
-        # ---- curriculum unlock ----
-        if (not curriculum_unlocked) and v_lpips < 0.52:
-            curriculum_unlocked = True
-            print("🔓  Curriculum unlocked – enabling blur ramp & LR cosine anneal")
+        prog_epochs   = 15          # 128-crop → 256-crop after epoch-15
+        accum_steps   = 2           # grad-accum
+        lpips_every   = 2           # compute LPIPS every k steps
+        lpips_w       = 0.30        # small weight
+        λ_adv         = 0.002       # gentle GAN weight
 
-        if curriculum_unlocked:
-            cos_lr.step()
-            if epoch % 20 == 0 and g_sigma_max < 12.0:
-                g_sigma_max += 0.5
-                if motion_k_choices[-1] < 31:
-                    motion_k_choices.append(motion_k_choices[-1] + 4)
+        print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
 
-        # ---- console ----
-        lr_now = opt.param_groups[0]['lr']
-        print(f"Epoch {epoch:3d}/{epochs} "
-              f"train {tr_loss:.4f} | "
-              f"val LPIPS {v_lpips:.4f} (gap {lpips_gap:+.3f}) | "
-              f"LR {lr_now:.2e}")
+        for ep in range(1, epochs + 1):
+            crop_sz = 128 if ep <= prog_epochs else 256
 
-        # ---- checkpoints ----
-        if v_lpips < best_lpips:
-            best_lpips = v_lpips
-            torch.save(model.state_dict(), "burst_deblur_best.pt")
+            # one-time LR reset at crop switch
+            if ep == prog_epochs + 1:
+                for g in g_opt.param_groups:
+                    g["lr"] = 5e-5
+                adv_on = True                      # B — start GAN now
+                print(f"🔄  LR reset to 5e-5 & GAN ON (λ_adv={λ_adv}) at ep {ep}")
 
-    torch.save(model.state_dict(), "burst_deblur_final.pt")
+            # -------- data loaders --------
+            full = BlurPairDataset(blur_dir, sharp_dir, burst_gen,
+                                img_size=(256, 256), T=T, crop_size=None)
+            val_sz = 50 if len(full) > 100 else int(0.1 * len(full))
+            tr_ds, va_ds = random_split(
+                full, [len(full) - val_sz, val_sz],
+                generator=torch.Generator().manual_seed(0))
+            pin = device.type == "cuda"
+            tr_ld = DataLoader(tr_ds, batch_size=1, shuffle=True,
+                            num_workers=2, pin_memory=pin)
+            va_ld = DataLoader(va_ds, batch_size=1, shuffle=False,
+                            num_workers=2, pin_memory=pin)
+
+            # -------- TRAIN --------
+            model.train()
+            run_loss = 0.0
+            edge_w   = 0.02 if ep < 40 else 0.04
+            cut_p    = 0.5 if crop_sz < 161 else 0.3
+
+            g_opt.zero_grad()
+            for step, (burst, sharp) in enumerate(
+                    tqdm(tr_ld, desc=f"{name} {ep}/{epochs}", leave=False, ncols=80)):
+
+                # progressive crop
+                _, _, H, W = sharp.shape
+                if H > crop_sz:
+                    top  = random.randint(0, H - crop_sz)
+                    left = random.randint(0, W - crop_sz)
+                    sharp = rand_crop(sharp, top, left, crop_sz, crop_sz)
+                    burst = rand_crop(burst, top, left, crop_sz, crop_sz)
+
+                # CutBlur (batch=1)
+                tgt = sharp[0]
+                frames = []
+                for frame in burst[0]:
+                    if random.random() < cut_p:
+                        frame, _ = cutblur(frame, tgt)
+                    frames.append(frame)
+                burst = torch.stack(frames, 0).unsqueeze(0).to(device)
+                sharp = sharp.to(device)
+
+                # forward
+                fake = model(burst)
+                ss   = 1 - (ssim if crop_sz < 161 else ms_ssim)(
+                        fake, sharp, data_range=1.0)
+                ed   = F.l1_loss(sobel(fake), sobel(sharp))
+                g_loss = 0.7 * ss + 0.3 * ed
+
+                # --- sparse LPIPS every 4 steps (Option A) ---
+                if (step % lpips_every) == 0:
+                    lp = lpips_fn(fake, sharp).mean()
+                    g_loss = g_loss + lpips_w * lp
+
+                # GAN term (Option B, already on after crop switch)
+                if adv_on:
+                    g_loss += λ_adv * bce(D(fake), torch.ones_like(D(fake)))
+
+                # grad-accum
+                (g_loss / accum_steps).backward()
+                run_loss += g_loss.item()
+
+                if (step + 1) % accum_steps == 0 or (step + 1) == len(tr_ld):
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                    g_opt.step(); g_opt.zero_grad()
+
+            tr_loss = run_loss / len(tr_ld)
+
+            # -------- VALIDATION every 2 epochs --------
+            if ep % 2 == 0:
+                torch.cuda.empty_cache()
+                model.eval(); v_lpips = 0.0
+                with torch.no_grad():
+                    for b, s in tqdm(va_ld, desc=f"{name} val {ep}",
+                                    leave=False, ncols=80):
+                        b, s = b.to(device), s.to(device)
+                        v_lpips += lpips_fn(model(b), s).sum().item()
+                v_lpips /= len(va_ds)
+            else:
+                v_lpips = float("nan")
+
+            sched.step()
+            print(f"{name} Ep{ep:3d}/{epochs} crop {crop_sz} | "
+                f"train {tr_loss:.4f} | val LPIPS {v_lpips:.4f} | "
+                f"LR {g_opt.param_groups[0]['lr']:.2e}")
+
+            if not math.isnan(v_lpips) and v_lpips < best_lpips:
+                best_lpips = v_lpips
+                torch.save(model.state_dict(), ckpt)
+
+
+    # ---- phase 1: synthetic 7-frame burst ----
+    # phase 1: synthetic 7-frame burst
+    run_phase("Pre-train", epochs_pre, lr_pre,
+            burst_gen_synth, T=7, ckpt="pretrain_best.pt")
+
+    # phase 2: fine-tune on real images
+    run_phase("Fine-tune", epochs_ft, lr_ft,
+            burst_gen_identity, T=1, ckpt="finetune_best.pt")
+
+
+
+
 
 
 
@@ -248,6 +428,7 @@ def train_dataset(blur_dir, sharp_dir, epochs=100, batch=4, lr=1e-4, device=None
 #  MAIN ENTRY
 # -------------------------------------------
 if __name__ == "__main__":
+    torch.cuda.empty_cache()
     ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     BLUR_DIR  = os.path.join(ROOT, "photos", "motion_blurred")
     SHARP_DIR = os.path.join(ROOT, "photos", "sharp")
