@@ -27,6 +27,7 @@ from blur_generator import generate_synthetic_burst, add_gaussian_noise, apply_m
 from pytorch_msssim import ssim
 from torch.cuda.amp import autocast, GradScaler
 import math
+import time
 
 
 g_sigma_max = 7.0
@@ -248,6 +249,7 @@ def train_dataset(
 
     import lpips; from pytorch_msssim import ms_ssim
     lpips_fn = lpips.LPIPS(net='vgg').to(device)
+    start_wall = time.perf_counter()
 
     # --------------------------------------------------
     def run_phase(name, epochs, lr, burst_gen, T, ckpt):
@@ -304,7 +306,7 @@ def train_dataset(
 
         prog_epochs   = 15
         accum_steps   = 2
-        lpips_every   = 2
+        lpips_every   = 1
         lpips_w       = 0.30                   # default perceptual weight
         λ_adv_initial = 0.002                  # initial GAN weight
         lr_frozen = False
@@ -317,8 +319,15 @@ def train_dataset(
             # crop switch → reset LR and enable GAN
             if ep == prog_epochs + 1:
                 for g in g_opt.param_groups:
-                    g["lr"] = 5e-5
-                adv_on = True
+                    g["lr"] = 5e-5                # put LR where you want it
+                # ✱ UN-FREEZE the schedule so it can walk down again
+                lr_frozen      = False            # <─ add this
+                min_lr_freeze  = 5e-6             # optional: lower floor
+                sched = optim.lr_scheduler.CosineAnnealingLR(
+                            g_opt,                # restart cosine from here
+                            T_max=max(1, epochs - ep),
+                            eta_min=min_lr_freeze)
+                adv_on = True                     # existing lines
                 λ_adv  = λ_adv_initial
                 print(f"🔄  LR reset to 5e-5 & GAN ON (λ_adv={λ_adv:.3f}) at ep {ep}")
 
@@ -340,11 +349,22 @@ def train_dataset(
             cut_p    = 0.5 if crop_sz < 161 else 0.3
 
             # --- enable full-time LPIPS + ramp GAN in last 10 ep of Fine-tune ---
+            if adv_on and crop_sz == 256 and λ_adv < 0.014:          # ↑ cap now 0.014
+                λ_adv = round(min(0.014, λ_adv + 0.002), 4)         # +0.002 / epoch
+
+            # full-time LPIPS + late ramp (unchanged except new cap)
             if name == "Fine-tune" and ep > epochs - 10:
-                lpips_every = 1                # every step
-                lpips_w     = 0.20
-                if adv_on and λ_adv < 0.006:   # ramp up smoothly
-                    λ_adv = round(min(0.006, λ_adv + 0.002), 4)
+                lpips_every = 1
+                lpips_w     = 0.20            # leave as-is
+                if adv_on and λ_adv < 0.014:
+                    λ_adv = round(min(0.014, λ_adv + 0.002), 4)
+
+            # -------- SSIM / edge blend (Option C) --------
+            if name == "Fine-tune" and ep >= 26 and crop_sz == 256:
+                # linear fade:  epoch 26→30  => 0.7→0.4
+                ssim_w = max(0.4, 0.7 - (ep - 25) * 0.06)   # (0.7-0.4)/5 = 0.06
+            else:
+                ssim_w = 0.7
 
             g_opt.zero_grad()
             for step, (burst, sharp) in enumerate(
@@ -363,7 +383,7 @@ def train_dataset(
                 fake = model(burst)
                 ss   = 1 - (ssim if crop_sz < 161 else ms_ssim)(fake, sharp, data_range=1.0)
                 ed   = F.l1_loss(sobel(fake), sobel(sharp))
-                g_loss = 0.7 * ss + 0.3 * ed
+                g_loss = ssim_w * ss + (1 - ssim_w) * ed      # uses the new ssim_w
 
                 # sparse or full LPIPS
                 if (step % lpips_every) == 0:
@@ -428,6 +448,10 @@ def train_dataset(
     # phase 2: fine-tune on real images
     run_phase("Fine-tune", epochs_ft, lr_ft,
             burst_gen_identity, T=1, ckpt="finetune_best.pt")
+    elapsed = int(time.perf_counter() - start_wall)
+    h, m = divmod(elapsed, 3600)
+    m, s = divmod(m, 60)
+    print(f"🏁  Total runtime: {h:d} h {m:02d} m {s:02d} s")
 
 
 
