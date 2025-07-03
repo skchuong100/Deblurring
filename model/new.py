@@ -310,6 +310,7 @@ def train_dataset(
         lpips_w       = 0.30                   # default perceptual weight
         λ_adv_initial = 0.002                  # initial GAN weight
         lr_frozen = False
+        validate_every = 1
 
         print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
 
@@ -322,7 +323,7 @@ def train_dataset(
                     g["lr"] = 5e-5                # put LR where you want it
                 # ✱ UN-FREEZE the schedule so it can walk down again
                 lr_frozen      = False            # <─ add this
-                min_lr_freeze  = 5e-6             # optional: lower floor
+                min_lr_freeze  = 1e-5             # optional: lower floor
                 sched = optim.lr_scheduler.CosineAnnealingLR(
                             g_opt,                # restart cosine from here
                             T_max=max(1, epochs - ep),
@@ -404,16 +405,14 @@ def train_dataset(
             tr_loss = run_loss / len(tr_ld)
 
             # -------------- VALIDATION --------------
-            if ep % 2 == 0:
-                torch.cuda.empty_cache()
-                model.eval(); v_lpips = 0.0
-                with torch.no_grad():
-                    for b, s in tqdm(va_ld, desc=f"{name} val {ep}", leave=False, ncols=80):
-                        b, s = b.to(device), s.to(device)
-                        v_lpips += lpips_fn(model(b), s).sum().item()
-                v_lpips /= len(va_ds)
-            else:
-                v_lpips = float("nan")
+            torch.cuda.empty_cache()
+            model.eval(); v_lpips = 0.0
+            with torch.no_grad():
+                for b, s in tqdm(va_ld, desc=f"{name} val {ep}", leave=False, ncols=80):
+                    b, s = b.to(device), s.to(device)
+                    v_lpips += lpips_fn(model(b), s).sum().item()
+            v_lpips /= len(va_ds)
+
 
             # LR step + freeze
             if not lr_frozen:
