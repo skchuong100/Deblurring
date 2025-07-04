@@ -171,7 +171,7 @@ def synth_burst(img: torch.Tensor, num_variants: int = 7):
     burst = []
     for _ in range(num_variants):
         g_k     = int(np.random.choice([9, 11, 13, 15]))        # kernel size (odd)
-        g_sigma = float(np.random.uniform(3.0, g_sigma_max))    # σ for gaussian blur
+        g_sigma = float(np.random.uniform(10.0, g_sigma_max))    # σ for gaussian blur
 
         m_k     = int(np.random.choice(motion_k_choices))       # motion-blur length
         m_angle = float(np.random.uniform(0, 360))              # motion-blur angle
@@ -233,6 +233,8 @@ def train_dataset(
         batch=2,
         lr_pre=1e-4, lr_ft=5e-5,
         prog_epochs=20,            # 1-20 → 128², then 256²
+        resume_pre = False,           # ← new
+        resume_ft =False,
         device=None):
 
     device = torch.device(device) if device else torch.device(
@@ -251,42 +253,6 @@ def train_dataset(
     lpips_fn = lpips.LPIPS(net='vgg').to(device)
     start_wall = time.perf_counter()
 
-    # --------------------------------------------------
-    def run_phase(name, epochs, lr, burst_gen, T, ckpt):
-        nonlocal model, adv_on
-        best_lpips = float('inf')
-
-        g_opt  = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
-        sched  = optim.lr_scheduler.CosineAnnealingLR(
-                    g_opt, T_max=max(1, epochs // 2), eta_min=lr*0.01)
-        scaler = GradScaler()
-
-        prog_epochs = 15          # switch to 256 crop after epoch-15
-
-        print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
-
-        lr_frozen = False
-
-        for ep in range(1, epochs+1):
-            crop_sz = 128 if ep <= prog_epochs else 256
-
-            # one-time LR boost at crop-switch
-            if ep == prog_epochs + 1:
-                for g in g_opt.param_groups:
-                    g["lr"] = 5e-5
-                print(f"🔄  LR reset to 5e-5 at epoch {ep} (crop 256)")
-
-            # rebuild loaders ----------------------------------------------------
-            full = BlurPairDataset(blur_dir, sharp_dir, burst_gen,
-                                img_size=(256,256), T=T, crop_size=None)
-            val_sz = 50 if len(full)>100 else int(0.1*len(full))
-            tr_ds, va_ds = random_split(full, [len(full)-val_sz, val_sz],
-                                        generator=torch.Generator().manual_seed(0))
-            pin = device.type=='cuda'
-            tr_ld = DataLoader(tr_ds, batch_size=batch, shuffle=True,
-                            num_workers=2, pin_memory=pin)
-            va_ld = DataLoader(va_ds, batch_size=batch, shuffle=False,
-                            num_workers=2, pin_memory=pin)
 
 
     def run_phase(name, epochs, lr, burst_gen, T, ckpt):
@@ -298,24 +264,56 @@ def train_dataset(
         nonlocal model, adv_on, λ_adv          # ← added λ_adv
         best_lpips = float("inf")
 
+
+
         g_opt = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
-        sched = optim.lr_scheduler.CosineAnnealingLR(
-            g_opt, T_max=max(1, epochs // 2), eta_min=lr * 0.01
-        )
-        min_lr_freeze = 2e-5                   # LR freeze threshold
+        # -------- optional resume --------
+        if (name == "Pre-train" and resume_pre) or (name == "Fine-tune" and resume_ft):
+            if os.path.isfile(ckpt):
+                model.load_state_dict(torch.load(ckpt, map_location=device),
+                                      strict=False)
+                print(f"🔄  Resumed {name} from {ckpt}")
+            else:
+                print(f"[WARN] resume flag set for {name} but {ckpt} not found – starting fresh")
+        if name == "Fine-tune":
+            # restart every 10 epochs, double the cycle length each time
+            sched = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+                        g_opt, T_0=10, T_mult=2, eta_min=5e-6)
+        else:  # Pre-train keeps the simpler half-cycle cosine
+            sched = optim.lr_scheduler.CosineAnnealingLR(
+                        g_opt, T_max=max(1, epochs // 2), eta_min=5e-6)
+
+        min_lr_freeze = 5e-6               # LR freeze threshold
 
         prog_epochs   = 15
         accum_steps   = 2
-        lpips_every   = 1
-        lpips_w       = 0.30                   # default perceptual weight
+        lpips_every   = 4
+        lpips_w       = 0.40                   # default perceptual weight
         λ_adv_initial = 0.002                  # initial GAN weight
         lr_frozen = False
         validate_every = 1
+        # ----- NEW progressive-resize + GAN knobs -----
+        epochs_128 = 10          # first stage 128×128
+        epochs_192 = 6           # second stage 192×192
+        gan_start  = epochs_128 + epochs_192 + 1   # turn GAN on when we hit 256×256
+        λ_adv_init = 0.001       # slower, gentler start
+        λ_adv_cap  = 0.008       # lower ceiling
+        λ_adv_step = 0.001       # add every 2 epochs
 
         print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
 
         for ep in range(1, epochs + 1):
-            crop_sz = 128 if ep <= prog_epochs else 256
+            if   ep <= epochs_128:
+                crop_sz = 128
+            elif ep <= epochs_128 + epochs_192:
+                crop_sz = 192
+            else:
+                crop_sz = 256
+
+            if not adv_on and crop_sz == 256:
+                adv_on = True
+                λ_adv  = λ_adv_init
+                print(f"🔄  GAN ON  (λ_adv = {λ_adv:.3f}) at epoch {ep}")
 
             # crop switch → reset LR and enable GAN
             if ep == prog_epochs + 1:
@@ -324,13 +322,13 @@ def train_dataset(
                 # ✱ UN-FREEZE the schedule so it can walk down again
                 lr_frozen      = False            # <─ add this
                 min_lr_freeze  = 1e-5             # optional: lower floor
-                sched = optim.lr_scheduler.CosineAnnealingLR(
-                            g_opt,                # restart cosine from here
-                            T_max=max(1, epochs - ep),
-                            eta_min=min_lr_freeze)
-                adv_on = True                     # existing lines
-                λ_adv  = λ_adv_initial
-                print(f"🔄  LR reset to 5e-5 & GAN ON (λ_adv={λ_adv:.3f}) at ep {ep}")
+                if name == "Fine-tune":
+                    sched = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+                                g_opt, T_0=10, T_mult=2, eta_min=min_lr_freeze)
+                else:
+                    sched = optim.lr_scheduler.CosineAnnealingLR(
+                                g_opt, T_max=max(1, epochs - ep), eta_min=min_lr_freeze)
+                print(f"🔄  LR reset to 5e-5 at ep {ep}")
 
             # ----- loader build (unchanged) -----
             full = BlurPairDataset(blur_dir, sharp_dir, burst_gen,
@@ -347,23 +345,22 @@ def train_dataset(
             model.train()
             run_loss = 0.0
             edge_w   = 0.02 if ep < 40 else 0.04
-            cut_p    = 0.5 if crop_sz < 161 else 0.3
+            cut_p    = 0.7 if crop_sz < 161 else 0.3
 
             # --- enable full-time LPIPS + ramp GAN in last 10 ep of Fine-tune ---
-            if adv_on and crop_sz == 256 and λ_adv < 0.014:          # ↑ cap now 0.014
-                λ_adv = round(min(0.014, λ_adv + 0.002), 4)         # +0.002 / epoch
+            if adv_on and crop_sz == 256 and ep % 2 == 0 and λ_adv < λ_adv_cap:
+                λ_adv = round(min(λ_adv_cap, λ_adv + λ_adv_step), 4)
 
             # full-time LPIPS + late ramp (unchanged except new cap)
             if name == "Fine-tune" and ep > epochs - 10:
-                lpips_every = 1
+                lpips_every = 4
                 lpips_w     = 0.20            # leave as-is
                 if adv_on and λ_adv < 0.014:
                     λ_adv = round(min(0.014, λ_adv + 0.002), 4)
 
             # -------- SSIM / edge blend (Option C) --------
-            if name == "Fine-tune" and ep >= 26 and crop_sz == 256:
-                # linear fade:  epoch 26→30  => 0.7→0.4
-                ssim_w = max(0.4, 0.7 - (ep - 25) * 0.06)   # (0.7-0.4)/5 = 0.06
+            if crop_sz == 256 and ep >= 17:             # pre-train ep17 ≈ first 256-crop epoch+1
+                ssim_w = max(0.4, 0.7 - (ep - 16) * 0.05)
             else:
                 ssim_w = 0.7
 

@@ -229,10 +229,12 @@ def rand_crop(t: torch.Tensor, top, left, h, w):
 
 def train_dataset(
         blur_dir, sharp_dir,
-        epochs_pre=60, epochs_ft=40,
+        epochs_pre=10, epochs_ft=40,
         batch=2,
         lr_pre=1e-4, lr_ft=5e-5,
         prog_epochs=20,            # 1-20 → 128², then 256²
+        resume_pre = True,           # ← new
+        resume_ft =False,
         device=None):
 
     device = torch.device(device) if device else torch.device(
@@ -251,42 +253,6 @@ def train_dataset(
     lpips_fn = lpips.LPIPS(net='vgg').to(device)
     start_wall = time.perf_counter()
 
-    # --------------------------------------------------
-    def run_phase(name, epochs, lr, burst_gen, T, ckpt):
-        nonlocal model, adv_on
-        best_lpips = float('inf')
-
-        g_opt  = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
-        sched  = optim.lr_scheduler.CosineAnnealingLR(
-                    g_opt, T_max=max(1, epochs // 2), eta_min=lr*0.01)
-        scaler = GradScaler()
-
-        prog_epochs = 15          # switch to 256 crop after epoch-15
-
-        print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
-
-        lr_frozen = False
-
-        for ep in range(1, epochs+1):
-            crop_sz = 128 if ep <= prog_epochs else 256
-
-            # one-time LR boost at crop-switch
-            if ep == prog_epochs + 1:
-                for g in g_opt.param_groups:
-                    g["lr"] = 5e-5
-                print(f"🔄  LR reset to 5e-5 at epoch {ep} (crop 256)")
-
-            # rebuild loaders ----------------------------------------------------
-            full = BlurPairDataset(blur_dir, sharp_dir, burst_gen,
-                                img_size=(256,256), T=T, crop_size=None)
-            val_sz = 50 if len(full)>100 else int(0.1*len(full))
-            tr_ds, va_ds = random_split(full, [len(full)-val_sz, val_sz],
-                                        generator=torch.Generator().manual_seed(0))
-            pin = device.type=='cuda'
-            tr_ld = DataLoader(tr_ds, batch_size=batch, shuffle=True,
-                            num_workers=2, pin_memory=pin)
-            va_ld = DataLoader(va_ds, batch_size=batch, shuffle=False,
-                            num_workers=2, pin_memory=pin)
 
 
     def run_phase(name, epochs, lr, burst_gen, T, ckpt):
@@ -298,7 +264,17 @@ def train_dataset(
         nonlocal model, adv_on, λ_adv          # ← added λ_adv
         best_lpips = float("inf")
 
+
+
         g_opt = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
+        # -------- optional resume --------
+        if (name == "Pre-train" and resume_pre) or (name == "Fine-tune" and resume_ft):
+            if os.path.isfile(ckpt):
+                model.load_state_dict(torch.load(ckpt, map_location=device),
+                                      strict=False)
+                print(f"🔄  Resumed {name} from {ckpt}")
+            else:
+                print(f"[WARN] resume flag set for {name} but {ckpt} not found – starting fresh")
         sched = optim.lr_scheduler.CosineAnnealingLR(
             g_opt, T_max=max(1, epochs // 2), eta_min=lr * 0.01
         )
@@ -307,9 +283,10 @@ def train_dataset(
         prog_epochs   = 15
         accum_steps   = 2
         lpips_every   = 1
-        lpips_w       = 0.30                   # default perceptual weight
+        lpips_w       = 0.40                   # default perceptual weight
         λ_adv_initial = 0.002                  # initial GAN weight
         lr_frozen = False
+        validate_every = 1
 
         print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
 
@@ -322,7 +299,7 @@ def train_dataset(
                     g["lr"] = 5e-5                # put LR where you want it
                 # ✱ UN-FREEZE the schedule so it can walk down again
                 lr_frozen      = False            # <─ add this
-                min_lr_freeze  = 5e-6             # optional: lower floor
+                min_lr_freeze  = 1e-5             # optional: lower floor
                 sched = optim.lr_scheduler.CosineAnnealingLR(
                             g_opt,                # restart cosine from here
                             T_max=max(1, epochs - ep),
@@ -349,15 +326,21 @@ def train_dataset(
             cut_p    = 0.5 if crop_sz < 161 else 0.3
 
             # --- enable full-time LPIPS + ramp GAN in last 10 ep of Fine-tune ---
-            if adv_on and crop_sz == 256 and λ_adv < 0.008:
-                λ_adv = round(min(0.008, λ_adv + 0.002), 4)     # +0.002 / epoch
+            if adv_on and crop_sz == 256 and λ_adv < 0.014:          # ↑ cap now 0.014
+                λ_adv = round(min(0.014, λ_adv + 0.002), 4)         # +0.002 / epoch
 
-            # keep previous rule for final 10 epochs of Fine-tune
+            # full-time LPIPS + late ramp (unchanged except new cap)
             if name == "Fine-tune" and ep > epochs - 10:
-                lpips_every = 1          # LPIPS every step
-                lpips_w     = 0.20
-                if adv_on and λ_adv < 0.010:                    # gentle top-up
-                    λ_adv = round(min(0.010, λ_adv + 0.002), 4)
+                lpips_every = 1
+                lpips_w     = 0.20            # leave as-is
+                if adv_on and λ_adv < 0.014:
+                    λ_adv = round(min(0.014, λ_adv + 0.002), 4)
+
+            # -------- SSIM / edge blend (Option C) --------
+            if crop_sz == 256 and ep >= 17:             # pre-train ep17 ≈ first 256-crop epoch+1
+                ssim_w = max(0.4, 0.7 - (ep - 16) * 0.05)
+            else:
+                ssim_w = 0.7
 
             g_opt.zero_grad()
             for step, (burst, sharp) in enumerate(
@@ -376,7 +359,7 @@ def train_dataset(
                 fake = model(burst)
                 ss   = 1 - (ssim if crop_sz < 161 else ms_ssim)(fake, sharp, data_range=1.0)
                 ed   = F.l1_loss(sobel(fake), sobel(sharp))
-                g_loss = 0.7 * ss + 0.3 * ed
+                g_loss = ssim_w * ss + (1 - ssim_w) * ed      # uses the new ssim_w
 
                 # sparse or full LPIPS
                 if (step % lpips_every) == 0:
@@ -397,16 +380,14 @@ def train_dataset(
             tr_loss = run_loss / len(tr_ld)
 
             # -------------- VALIDATION --------------
-            if ep % 2 == 0:
-                torch.cuda.empty_cache()
-                model.eval(); v_lpips = 0.0
-                with torch.no_grad():
-                    for b, s in tqdm(va_ld, desc=f"{name} val {ep}", leave=False, ncols=80):
-                        b, s = b.to(device), s.to(device)
-                        v_lpips += lpips_fn(model(b), s).sum().item()
-                v_lpips /= len(va_ds)
-            else:
-                v_lpips = float("nan")
+            torch.cuda.empty_cache()
+            model.eval(); v_lpips = 0.0
+            with torch.no_grad():
+                for b, s in tqdm(va_ld, desc=f"{name} val {ep}", leave=False, ncols=80):
+                    b, s = b.to(device), s.to(device)
+                    v_lpips += lpips_fn(model(b), s).sum().item()
+            v_lpips /= len(va_ds)
+
 
             # LR step + freeze
             if not lr_frozen:
