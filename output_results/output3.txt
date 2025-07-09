@@ -1,0 +1,204 @@
+=== Pre-train: 60 epochs, lr=1.0e-04 ===
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  1/60 crop 128 | train 0.5911 | val LPIPS nan | LR 9.97e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  2/60 crop 128 | train 0.5823 | val LPIPS 0.6386 | LR 9.89e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  3/60 crop 128 | train 0.5746 | val LPIPS nan | LR 9.76e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  4/60 crop 128 | train 0.5728 | val LPIPS 0.6142 | LR 9.57e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  5/60 crop 128 | train 0.5586 | val LPIPS nan | LR 9.34e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  6/60 crop 128 | train 0.5611 | val LPIPS 0.6117 | LR 9.05e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  7/60 crop 128 | train 0.5580 | val LPIPS nan | LR 8.73e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  8/60 crop 128 | train 0.5618 | val LPIPS 0.6051 | LR 8.36e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  9/60 crop 128 | train 0.5637 | val LPIPS nan | LR 7.96e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 10/60 crop 128 | train 0.5621 | val LPIPS 0.5971 | LR 7.52e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 11/60 crop 128 | train 0.5608 | val LPIPS nan | LR 7.06e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 12/60 crop 128 | train 0.5565 | val LPIPS 0.6027 | LR 6.58e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 13/60 crop 128 | train 0.5605 | val LPIPS nan | LR 6.08e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 14/60 crop 128 | train 0.5515 | val LPIPS 0.5971 | LR 5.57e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 15/60 crop 128 | train 0.5506 | val LPIPS nan | LR 5.05e-05
+🔄  LR reset to 5e-5 & GAN ON (λ_adv=0.002) at ep 16
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 16/60 crop 256 | train 0.5983 | val LPIPS 0.5818 | LR 4.49e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 17/60 crop 256 | train 0.5963 | val LPIPS nan | LR 3.98e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 18/60 crop 256 | train 0.5948 | val LPIPS 0.5762 | LR 3.49e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 19/60 crop 256 | train 0.5943 | val LPIPS nan | LR 3.01e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 20/60 crop 256 | train 0.5942 | val LPIPS 0.5680 | LR 2.55e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 21/60 crop 256 | train 0.5913 | val LPIPS nan | LR 2.12e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 22/60 crop 256 | train 0.5907 | val LPIPS 0.5640 | LR 1.72e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 23/60 crop 256 | train 0.5889 | val LPIPS nan | LR 1.36e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 24/60 crop 256 | train 0.5922 | val LPIPS 0.5636 | LR 1.04e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 25/60 crop 256 | train 0.5900 | val LPIPS nan | LR 7.56e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 26/60 crop 256 | train 0.5876 | val LPIPS 0.5612 | LR 5.24e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 27/60 crop 256 | train 0.5914 | val LPIPS nan | LR 3.40e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 28/60 crop 256 | train 0.5871 | val LPIPS 0.5612 | LR 2.07e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 29/60 crop 256 | train 0.5893 | val LPIPS nan | LR 1.27e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 30/60 crop 256 | train 0.5862 | val LPIPS 0.5600 | LR 1.00e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 31/60 crop 256 | train 0.5890 | val LPIPS nan | LR 1.27e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 32/60 crop 256 | train 0.5898 | val LPIPS 0.5592 | LR 2.08e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 33/60 crop 256 | train 0.5894 | val LPIPS nan | LR 3.42e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 34/60 crop 256 | train 0.5905 | val LPIPS 0.5621 | LR 5.28e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 35/60 crop 256 | train 0.5907 | val LPIPS nan | LR 7.63e-06
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 36/60 crop 256 | train 0.5866 | val LPIPS 0.5588 | LR 1.05e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 37/60 crop 256 | train 0.5904 | val LPIPS nan | LR 1.37e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 38/60 crop 256 | train 0.5906 | val LPIPS 0.5607 | LR 1.74e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 39/60 crop 256 | train 0.5895 | val LPIPS nan | LR 2.14e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 40/60 crop 256 | train 0.5890 | val LPIPS 0.5606 | LR 2.58e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 41/60 crop 256 | train 0.5917 | val LPIPS nan | LR 3.04e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 42/60 crop 256 | train 0.5883 | val LPIPS 0.5599 | LR 3.52e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 43/60 crop 256 | train 0.5928 | val LPIPS nan | LR 4.02e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 44/60 crop 256 | train 0.5906 | val LPIPS 0.5593 | LR 4.53e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 45/60 crop 256 | train 0.5897 | val LPIPS nan | LR 5.05e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 46/60 crop 256 | train 0.5902 | val LPIPS 0.5652 | LR 5.57e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 47/60 crop 256 | train 0.5858 | val LPIPS nan | LR 6.08e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 48/60 crop 256 | train 0.5905 | val LPIPS 0.5642 | LR 6.58e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 49/60 crop 256 | train 0.5906 | val LPIPS nan | LR 7.06e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 50/60 crop 256 | train 0.5881 | val LPIPS 0.5589 | LR 7.53e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 51/60 crop 256 | train 0.5901 | val LPIPS nan | LR 7.96e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 52/60 crop 256 | train 0.5907 | val LPIPS 0.5600 | LR 8.36e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 53/60 crop 256 | train 0.5897 | val LPIPS nan | LR 8.73e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 54/60 crop 256 | train 0.5904 | val LPIPS 0.5579 | LR 9.05e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 55/60 crop 256 | train 0.5890 | val LPIPS nan | LR 9.34e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 56/60 crop 256 | train 0.5894 | val LPIPS 0.5606 | LR 9.57e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 57/60 crop 256 | train 0.5900 | val LPIPS nan | LR 9.76e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 58/60 crop 256 | train 0.5836 | val LPIPS 0.5566 | LR 9.89e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 59/60 crop 256 | train 0.5846 | val LPIPS nan | LR 9.97e-05
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 60/60 crop 256 | train 0.5881 | val LPIPS 0.5620 | LR 1.00e-04
+=== Fine-tune: 40 epochs, lr=5.0e-05 ===
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  1/40 crop 128 | train 0.5627 | val LPIPS nan | LR 4.97e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  2/40 crop 128 | train 0.5549 | val LPIPS 0.5505 | LR 4.88e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  3/40 crop 128 | train 0.5520 | val LPIPS nan | LR 4.73e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  4/40 crop 128 | train 0.5471 | val LPIPS 0.5532 | LR 4.53e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  5/40 crop 128 | train 0.5422 | val LPIPS nan | LR 4.28e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  6/40 crop 128 | train 0.5536 | val LPIPS 0.5443 | LR 3.98e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  7/40 crop 128 | train 0.5524 | val LPIPS nan | LR 3.65e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  8/40 crop 128 | train 0.5508 | val LPIPS 0.5433 | LR 3.29e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  9/40 crop 128 | train 0.5484 | val LPIPS nan | LR 2.91e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 10/40 crop 128 | train 0.5525 | val LPIPS 0.5530 | LR 2.53e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 11/40 crop 128 | train 0.5486 | val LPIPS nan | LR 2.14e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 12/40 crop 128 | train 0.5409 | val LPIPS 0.5405 | LR 1.76e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 13/40 crop 128 | train 0.5503 | val LPIPS nan | LR 1.40e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 14/40 crop 128 | train 0.5493 | val LPIPS 0.5385 | LR 1.07e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 15/40 crop 128 | train 0.5507 | val LPIPS nan | LR 7.75e-06
+🔄  LR reset to 5e-5 & GAN ON (λ_adv=0.002) at ep 16
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 16/40 crop 256 | train 0.5858 | val LPIPS 0.5326 | LR 3.28e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 17/40 crop 256 | train 0.5797 | val LPIPS nan | LR 1.89e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 18/40 crop 256 | train 0.5742 | val LPIPS 0.5308 | LR 8.77e-06
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 19/40 crop 256 | train 0.5736 | val LPIPS nan | LR 2.58e-06
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 20/40 crop 256 | train 0.5701 | val LPIPS 0.5302 | LR 5.00e-07
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 21/40 crop 256 | train 0.5713 | val LPIPS nan | LR 8.05e-07
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 22/40 crop 256 | train 0.5681 | val LPIPS 0.5313 | LR 1.71e-06
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 23/40 crop 256 | train 0.5656 | val LPIPS nan | LR 3.20e-06
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 24/40 crop 256 | train 0.5705 | val LPIPS 0.5303 | LR 5.23e-06
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 25/40 crop 256 | train 0.5667 | val LPIPS nan | LR 7.75e-06
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 26/40 crop 256 | train 0.5658 | val LPIPS 0.5306 | LR 1.07e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 27/40 crop 256 | train 0.5725 | val LPIPS nan | LR 1.40e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 28/40 crop 256 | train 0.5693 | val LPIPS 0.5302 | LR 1.76e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 29/40 crop 256 | train 0.5703 | val LPIPS nan | LR 2.14e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 30/40 crop 256 | train 0.5672 | val LPIPS 0.5304 | LR 2.52e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 31/40 crop 256 | train 0.5679 | val LPIPS nan | LR 2.91e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 32/40 crop 256 | train 0.5642 | val LPIPS 0.5342 | LR 3.29e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 33/40 crop 256 | train 0.5611 | val LPIPS nan | LR 3.65e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 34/40 crop 256 | train 0.5627 | val LPIPS 0.5319 | LR 3.98e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 35/40 crop 256 | train 0.5620 | val LPIPS nan | LR 4.28e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 36/40 crop 256 | train 0.5618 | val LPIPS 0.5334 | LR 4.53e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 37/40 crop 256 | train 0.5629 | val LPIPS nan | LR 4.73e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 38/40 crop 256 | train 0.5589 | val LPIPS 0.5323 | LR 4.88e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 39/40 crop 256 | train 0.5560 | val LPIPS nan | LR 4.97e-05
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 40/40 crop 256 | train 0.5563 | val LPIPS 0.5377 | LR 5.00e-05

@@ -28,6 +28,8 @@ from pytorch_msssim import ssim
 from torch.cuda.amp import autocast, GradScaler
 import math
 import time
+import torchvision
+
 
 
 g_sigma_max = 7.0
@@ -59,6 +61,7 @@ class BlurPairDataset(Dataset):
         return burst,s
 
 from reformer_pytorch import Reformer
+
 
 class BurstDeblurNet(nn.Module):
     """
@@ -171,7 +174,7 @@ def synth_burst(img: torch.Tensor, num_variants: int = 7):
     burst = []
     for _ in range(num_variants):
         g_k     = int(np.random.choice([9, 11, 13, 15]))        # kernel size (odd)
-        g_sigma = float(np.random.uniform(3.0, g_sigma_max))    # σ for gaussian blur
+        g_sigma = float(np.random.uniform(10.0, g_sigma_max))    # σ for gaussian blur
 
         m_k     = int(np.random.choice(motion_k_choices))       # motion-blur length
         m_angle = float(np.random.uniform(0, 360))              # motion-blur angle
@@ -227,6 +230,51 @@ def rand_crop(t: torch.Tensor, top, left, h, w):
     return t[..., top:top + h, left:left + w]
 # -----------------------------------------------------
 
+# ===============================
+#  Reblur modules
+# ===============================
+class ReblurKernelNet(nn.Module):
+    def __init__(self, in_channels=3, kernel_size=15):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.predictor = nn.Sequential(
+            nn.Conv2d(in_channels, 32, 3, padding=1), nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1), nn.ReLU(),
+            nn.Conv2d(64, kernel_size**2, 1)
+        )
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        k = self.predictor(x)
+        k = k.view(B, 1, self.kernel_size, self.kernel_size, H, W)
+        k = k.view(B, 1, self.kernel_size * self.kernel_size, H, W)
+        k = torch.softmax(k, dim=2)  # softmax over flattened kernel
+        k = k.view(B, 1, self.kernel_size, self.kernel_size, H, W)
+
+        return k
+
+class ReblurLayer(nn.Module):
+    def __init__(self, kernel_size):
+        super().__init__()
+        self.kernel_size = kernel_size
+        self.pad = kernel_size // 2
+
+    def forward(self, image, kernel):
+        B, C, H, W = image.shape
+        K = self.kernel_size
+        patches = F.unfold(F.pad(image, (self.pad,)*4), K)
+        patches = patches.view(B, C, K, K, H, W)
+        out = (patches * kernel).sum(dim=(2, 3))
+        return out
+
+# --- burst generators that ARE picklable -------------------
+def burst_gen_synth(img, num_variants=7):
+    return synth_burst(img, num_variants)
+
+def burst_gen_identity(img, num_variants=1):
+    return [img]            # single-frame “burst”
+
+
 def train_dataset(
         blur_dir, sharp_dir,
         epochs_pre=60, epochs_ft=40,
@@ -248,6 +296,11 @@ def train_dataset(
     bce   = nn.BCEWithLogitsLoss()
     λ_adv = 0.005
     adv_on = False                # switch on after LPIPS < 0.55
+
+    # NEW: reblur modules
+    kernel_net = ReblurKernelNet(kernel_size=15).to(device)
+    reblur_layer = ReblurLayer(kernel_size=15).to(device)
+    λ_reblur = 0.5
 
     import lpips; from pytorch_msssim import ms_ssim
     lpips_fn = lpips.LPIPS(net='vgg').to(device)
@@ -275,23 +328,65 @@ def train_dataset(
                 print(f"🔄  Resumed {name} from {ckpt}")
             else:
                 print(f"[WARN] resume flag set for {name} but {ckpt} not found – starting fresh")
-        sched = optim.lr_scheduler.CosineAnnealingLR(
-            g_opt, T_max=max(1, epochs // 2), eta_min=lr * 0.01
-        )
-        min_lr_freeze = 2e-5                   # LR freeze threshold
+        if name == "Fine-tune":
+            # cosine from 5 e-5 → 3 e-6, no warm restarts
+            sched = optim.lr_scheduler.CosineAnnealingLR(
+                        g_opt, T_max=epochs, eta_min=3e-6)
+        else:                               # Pre-train
+            # same shape, slightly higher floor
+            sched = optim.lr_scheduler.CosineAnnealingLR(
+                        g_opt, T_max=epochs, eta_min=5e-6)
+
+
+        min_lr_freeze = 5e-6               # LR freeze threshold
 
         prog_epochs   = 15
         accum_steps   = 2
-        lpips_every   = 1
-        lpips_w       = 0.40                   # default perceptual weight
+        lpips_every   = 4
+        lpips_w       = 0.35                   # default perceptual weight
         λ_adv_initial = 0.002                  # initial GAN weight
         lr_frozen = False
         validate_every = 1
+        # ----- NEW progressive-resize + GAN knobs -----
+        epochs_128 = 12          # more time at 128
+        epochs_192 = 10          # more time at 192
+
+        gan_start  = 23
+
+        λ_adv_init = 0.001       # slower, gentler start
+        λ_adv_cap  = 0.008       # lower ceiling
+        λ_adv_step = 0.001       # add every 2 epochs
+        lpips_bump_epoch = 45          # raise lpips_w at this epoch
+        adv_decay = {45: 0.006,        # λ_adv decay schedule
+                    50: 0.004,
+                    55: 0.002}
+        λ_reblur_max = 0.5
+        λ_reblur_delay = 8         # delay reblur loss start until ep ≥ 8
+        λ_reblur_ramp = 6          # gradual ramp from 0 → 0.5 over next 6 epochs
+
 
         print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
 
         for ep in range(1, epochs + 1):
-            crop_sz = 128 if ep <= prog_epochs else 256
+                        # Reblur loss weight: delayed start + linear ramp
+            if ep < λ_reblur_delay:
+                λ_reblur = 0.0
+            elif ep < λ_reblur_delay + λ_reblur_ramp:
+                λ_reblur = round((ep - λ_reblur_delay + 1) / λ_reblur_ramp * λ_reblur_max, 3)
+            else:
+                λ_reblur = λ_reblur_max
+
+            if   ep <= epochs_128:
+                crop_sz = 128
+            elif ep <= epochs_128 + epochs_192:
+                crop_sz = 192
+            else:
+                crop_sz = 256
+
+            if not adv_on and crop_sz == 256:
+                adv_on = True
+                λ_adv  = λ_adv_init
+                print(f"🔄  GAN ON  (λ_adv = {λ_adv:.3f}) at epoch {ep}")
 
             # crop switch → reset LR and enable GAN
             if ep == prog_epochs + 1:
@@ -301,12 +396,8 @@ def train_dataset(
                 lr_frozen      = False            # <─ add this
                 min_lr_freeze  = 1e-5             # optional: lower floor
                 sched = optim.lr_scheduler.CosineAnnealingLR(
-                            g_opt,                # restart cosine from here
-                            T_max=max(1, epochs - ep),
-                            eta_min=min_lr_freeze)
-                adv_on = True                     # existing lines
-                λ_adv  = λ_adv_initial
-                print(f"🔄  LR reset to 5e-5 & GAN ON (λ_adv={λ_adv:.3f}) at ep {ep}")
+                g_opt, T_max=max(1, epochs - ep), eta_min=min_lr_freeze)
+                print(f"🔄  LR reset to 5e-5 at ep {ep}")
 
             # ----- loader build (unchanged) -----
             full = BlurPairDataset(blur_dir, sharp_dir, burst_gen,
@@ -323,18 +414,32 @@ def train_dataset(
             model.train()
             run_loss = 0.0
             edge_w   = 0.02 if ep < 40 else 0.04
-            cut_p    = 0.5 if crop_sz < 161 else 0.3
+            cut_p    = 0.7 if crop_sz < 161 else 0.3
+
+            # ---- mid-run LPIPS bump ----
+            if ep == lpips_bump_epoch:
+                lpips_w = 0.50
+                print(f"🔧  lpips_w raised to {lpips_w:.2f} at epoch {ep}")
+
+            # ---- λ_adv decay schedule ----
+            if adv_on and crop_sz == 256 and ep in adv_decay:
+                λ_adv = adv_decay[ep]
+                λ_adv_cap = λ_adv          # <─ prevents the ramp block from climbing again
+                print(f"🔽  λ_adv decayed to {λ_adv:.3f} at epoch {ep}")
 
             # --- enable full-time LPIPS + ramp GAN in last 10 ep of Fine-tune ---
-            if adv_on and crop_sz == 256 and λ_adv < 0.014:          # ↑ cap now 0.014
-                λ_adv = round(min(0.014, λ_adv + 0.002), 4)         # +0.002 / epoch
+            if name == "Pre-train" and adv_on and crop_sz == 256 and ep % 2 == 0 and λ_adv < λ_adv_cap:
+                λ_adv = round(min(λ_adv_cap, λ_adv + λ_adv_step), 4)
 
-            # full-time LPIPS + late ramp (unchanged except new cap)
-            if name == "Fine-tune" and ep > epochs - 10:
-                lpips_every = 1
-                lpips_w     = 0.20            # leave as-is
-                if adv_on and λ_adv < 0.014:
-                    λ_adv = round(min(0.014, λ_adv + 0.002), 4)
+            if name == "Fine-tune" and crop_sz == 256 and ep in (18,):
+                λ_adv = 0.002     # or even 0.0 for a discriminator freeze
+                print(f"🔒 λ_adv frozen at {λ_adv:.3f} from epoch {ep}")
+
+            if name == "Fine-tune" and ep == 18:
+                lpips_w = 0.60
+                print(f"🔧 lpips_w raised to {lpips_w:.2f} at epoch {ep}")
+
+
 
             # -------- SSIM / edge blend (Option C) --------
             if crop_sz == 256 and ep >= 17:             # pre-train ep17 ≈ first 256-crop epoch+1
@@ -346,7 +451,6 @@ def train_dataset(
             for step, (burst, sharp) in enumerate(
                     tqdm(tr_ld, desc=f"{name} {ep}/{epochs}", leave=False, ncols=80)):
 
-                # CutBlur (batch=1)
                 tgt = sharp[0]
                 frames = []
                 for frame in burst[0]:
@@ -355,24 +459,38 @@ def train_dataset(
                     frames.append(frame)
                 burst = torch.stack(frames, 0).unsqueeze(0).to(device)
                 sharp = sharp.to(device)
+                blur_input = burst[:,0]  # blurry input frame
 
                 fake = model(burst)
                 ss   = 1 - (ssim if crop_sz < 161 else ms_ssim)(fake, sharp, data_range=1.0)
                 ed   = F.l1_loss(sobel(fake), sobel(sharp))
-                g_loss = ssim_w * ss + (1 - ssim_w) * ed      # uses the new ssim_w
+                g_loss = ssim_w * ss + (1 - ssim_w) * ed
 
-                # sparse or full LPIPS
                 if (step % lpips_every) == 0:
                     lp = lpips_fn(fake, sharp).mean()
                     g_loss += lpips_w * lp
 
-                # GAN loss if enabled
+                # --- NEW reblur-guided loss ---
+                re_k = kernel_net(fake.detach())
+                reblurred = reblur_layer(fake, re_k)
+                if ep % 5 == 0 and step == 0:
+                    os.makedirs("debug", exist_ok=True)
+                    torchvision.utils.save_image(
+                        reblurred.clamp(0, 1),
+                        f"debug/reblur_ep{ep:03}.png"
+                    )
+                loss_reblur = lpips_fn(reblurred, blur_input).mean()
+                reblur_val = loss_reblur.item()
+                g_loss += λ_reblur * loss_reblur
+                loss_reg = (re_k ** 2).mean()
+                g_loss += 0.0001 * loss_reg  # You can tune this weight later
+
+
                 if adv_on:
                     g_loss += λ_adv * bce(D(fake), torch.ones_like(D(fake)))
 
                 (g_loss / accum_steps).backward()
                 run_loss += g_loss.item()
-
                 if (step + 1) % accum_steps == 0 or (step + 1) == len(tr_ld):
                     torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
                     g_opt.step(); g_opt.zero_grad()
@@ -406,7 +524,9 @@ def train_dataset(
 
             print(f"{name} Ep{ep:3d}/{epochs} crop {crop_sz} | "
                 f"train {tr_loss:.4f} | val LPIPS {v_lpips:.4f} | "
-                f"LR {g_opt.param_groups[0]['lr']:.2e} | λ_adv {λ_adv:.3f}")
+                f"LR {g_opt.param_groups[0]['lr']:.2e} | λ_adv {λ_adv:.3f}"
+                f"| LPIPS_reblur {reblur_val:.4f} | λ_reblur {λ_reblur:.3f}")
+
 
             if not math.isnan(v_lpips) and v_lpips < best_lpips:
                 best_lpips = v_lpips

@@ -1,0 +1,98 @@
+Pre-train Ep 55/60 crop 256 | train 0.4179 | val LPIPS 0.5620 | LR 1.08e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 56/60 crop 256 | train 0.4196 | val LPIPS 0.5621 | LR 1.05e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 57/60 crop 256 | train 0.4193 | val LPIPS 0.5618 | LR 1.02e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 58/60 crop 256 | train 0.4196 | val LPIPS 0.5614 | LR 1.01e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+🧊  LR frozen at 1.00e-05 from epoch 59
+Pre-train Ep 59/60 crop 256 | train 0.4180 | val LPIPS 0.5641 | LR 1.00e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 60/60 crop 256 | train 0.4145 | val LPIPS 0.5637 | LR 1.00e-05 | λ_adv 0.002
+=== Fine-tune: 40 epochs, lr=5.0e-05 ===
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  1/40 crop 128 | train 0.4736 | val LPIPS 0.5496 | LR 4.99e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  2/40 crop 128 | train 0.4709 | val LPIPS 0.5472 | LR 4.97e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  3/40 crop 128 | train 0.4654 | val LPIPS 0.5481 | LR 4.94e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  4/40 crop 128 | train 0.4662 | val LPIPS 0.5498 | LR 4.88e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  5/40 crop 128 | train 0.4652 | val LPIPS 0.5464 | LR 4.82e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  6/40 crop 128 | train 0.4653 | val LPIPS 0.5478 | LR 4.74e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  7/40 crop 128 | train 0.4639 | val LPIPS 0.5491 | LR 4.65e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  8/40 crop 128 | train 0.4625 | val LPIPS 0.5448 | LR 4.55e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  9/40 crop 128 | train 0.4647 | val LPIPS 0.5449 | LR 4.44e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 10/40 crop 128 | train 0.4608 | val LPIPS 0.5504 | LR 4.31e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 11/40 crop 192 | train 0.5411 | val LPIPS 0.5419 | LR 4.18e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 12/40 crop 192 | train 0.5313 | val LPIPS 0.5403 | LR 4.03e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 13/40 crop 192 | train 0.5228 | val LPIPS 0.5394 | LR 3.88e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 14/40 crop 192 | train 0.5165 | val LPIPS 0.5401 | LR 3.72e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 15/40 crop 192 | train 0.5097 | val LPIPS 0.5429 | LR 3.55e-05 | λ_adv 0.002
+🔄  LR reset to 5e-5 at ep 16
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 16/40 crop 192 | train 0.5104 | val LPIPS 0.5379 | LR 4.98e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 17/40 crop 256 | train 0.4884 | val LPIPS 0.5521 | LR 4.93e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+🔒 λ_adv frozen at 0.002 from epoch 18
+🔧 lpips_w raised to 0.60 at epoch 18
+Fine-tune Ep 18/40 crop 256 | train 0.5006 | val LPIPS 0.5405 | LR 4.85e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 19/40 crop 256 | train 0.4769 | val LPIPS 0.5374 | LR 4.73e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 20/40 crop 256 | train 0.4560 | val LPIPS 0.5380 | LR 4.59e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 21/40 crop 256 | train 0.4347 | val LPIPS 0.5369 | LR 4.41e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 22/40 crop 256 | train 0.4132 | val LPIPS 0.5385 | LR 4.22e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 23/40 crop 256 | train 0.4107 | val LPIPS 0.5349 | LR 4.00e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 24/40 crop 256 | train 0.4102 | val LPIPS 0.5360 | LR 3.77e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 25/40 crop 256 | train 0.4043 | val LPIPS 0.5368 | LR 3.52e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 26/40 crop 256 | train 0.4026 | val LPIPS 0.5372 | LR 3.26e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 27/40 crop 256 | train 0.4001 | val LPIPS 0.5343 | LR 3.00e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 28/40 crop 256 | train 0.3978 | val LPIPS 0.5340 | LR 2.74e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 29/40 crop 256 | train 0.3949 | val LPIPS 0.5364 | LR 2.48e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 30/40 crop 256 | train 0.3911 | val LPIPS 0.5322 | LR 2.23e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 31/40 crop 256 | train 0.3886 | val LPIPS 0.5381 | LR 2.00e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 32/40 crop 256 | train 0.3870 | val LPIPS 0.5339 | LR 1.78e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 33/40 crop 256 | train 0.3843 | val LPIPS 0.5329 | LR 1.59e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 34/40 crop 256 | train 0.3822 | val LPIPS 0.5307 | LR 1.41e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 35/40 crop 256 | train 0.3825 | val LPIPS 0.5318 | LR 1.27e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 36/40 crop 256 | train 0.3784 | val LPIPS 0.5327 | LR 1.15e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 37/40 crop 256 | train 0.3797 | val LPIPS 0.5353 | LR 1.07e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 38/40 crop 256 | train 0.3749 | val LPIPS 0.5324 | LR 1.02e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+🧊  LR frozen at 1.00e-05 from epoch 39
+Fine-tune Ep 39/40 crop 256 | train 0.3764 | val LPIPS 0.5337 | LR 1.00e-05 | λ_adv 0.002
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 40/40 crop 256 | train 0.3777 | val LPIPS 0.5323 | LR 1.00e-05 | λ_adv 0.002
+🏁  Total runtime: 14 h 47 m 08 s
