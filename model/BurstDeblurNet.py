@@ -229,11 +229,11 @@ def rand_crop(t: torch.Tensor, top, left, h, w):
 
 def train_dataset(
         blur_dir, sharp_dir,
-        epochs_pre=10, epochs_ft=40,
+        epochs_pre=60, epochs_ft=40,
         batch=2,
         lr_pre=1e-4, lr_ft=5e-5,
         prog_epochs=20,            # 1-20 → 128², then 256²
-        resume_pre = True,           # ← new
+        resume_pre = False,           # ← new
         resume_ft =False,
         device=None):
 
