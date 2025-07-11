@@ -1,0 +1,87 @@
+=== Pre-train: 60 epochs, lr=1.0e-04 ===
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  1/60 crop 128 | train 0.5031 | val LPIPS 0.6480 | LR 9.99e-05 | λ_adv 0.005| LPIPS_reblur 0.6896 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  2/60 crop 128 | train 0.4896 | val LPIPS 0.6461 | LR 9.97e-05 | λ_adv 0.005| LPIPS_reblur 0.5808 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  3/60 crop 128 | train 0.4846 | val LPIPS 0.6363 | LR 9.94e-05 | λ_adv 0.005| LPIPS_reblur 0.6419 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  4/60 crop 128 | train 0.4839 | val LPIPS 0.6206 | LR 9.90e-05 | λ_adv 0.005| LPIPS_reblur 0.6549 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  5/60 crop 128 | train 0.4807 | val LPIPS 0.6093 | LR 9.84e-05 | λ_adv 0.005| LPIPS_reblur 0.5856 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  6/60 crop 128 | train 0.4779 | val LPIPS 0.6062 | LR 9.77e-05 | λ_adv 0.005| LPIPS_reblur 0.6411 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  7/60 crop 128 | train 0.4753 | val LPIPS 0.5992 | LR 9.68e-05 | λ_adv 0.005| LPIPS_reblur 0.5777 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  8/60 crop 128 | train 0.5272 | val LPIPS 0.6003 | LR 9.59e-05 | λ_adv 0.005| LPIPS_reblur 0.5795 | λ_reblur 0.083
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  9/60 crop 128 | train 0.5748 | val LPIPS 0.5945 | LR 9.48e-05 | λ_adv 0.005| LPIPS_reblur 0.6434 | λ_reblur 0.167
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 10/60 crop 128 | train 0.6226 | val LPIPS 0.6000 | LR 9.36e-05 | λ_adv 0.005| LPIPS_reblur 0.5657 | λ_reblur 0.250
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 11/60 crop 128 | train 0.6701 | val LPIPS 0.5928 | LR 9.23e-05 | λ_adv 0.005| LPIPS_reblur 0.5829 | λ_reblur 0.333
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 12/60 crop 128 | train 0.7166 | val LPIPS 0.5903 | LR 9.09e-05 | λ_adv 0.005| LPIPS_reblur 0.5283 | λ_reblur 0.417
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 13/60 crop 192 | train 0.8560 | val LPIPS 0.5806 | LR 8.94e-05 | λ_adv 0.005| LPIPS_reblur 0.5894 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 14/60 crop 192 | train 0.8474 | val LPIPS 0.5831 | LR 8.78e-05 | λ_adv 0.005| LPIPS_reblur 0.5802 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 15/60 crop 192 | train 0.8367 | val LPIPS 0.6512 | LR 8.61e-05 | λ_adv 0.005| LPIPS_reblur 0.4604 | λ_reblur 0.500
+🔄  LR reset to 5e-5 at ep 16
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 16/60 crop 192 | train 0.8280 | val LPIPS 0.6609 | LR 4.99e-05 | λ_adv 0.005| LPIPS_reblur 0.5098 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 17/60 crop 192 | train 0.8253 | val LPIPS 0.6606 | LR 4.98e-05 | λ_adv 0.005| LPIPS_reblur 0.6018 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 18/60 crop 192 | train 0.8238 | val LPIPS 0.6575 | LR 4.95e-05 | λ_adv 0.005| LPIPS_reblur 0.4751 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 19/60 crop 192 | train 0.8222 | val LPIPS 0.6569 | LR 4.92e-05 | λ_adv 0.005| LPIPS_reblur 0.4507 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 20/60 crop 192 | train 0.8224 | val LPIPS 0.6573 | LR 4.87e-05 | λ_adv 0.005| LPIPS_reblur 0.3798 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 21/60 crop 192 | train 0.8220 | val LPIPS 0.6642 | LR 4.82e-05 | λ_adv 0.005| LPIPS_reblur 0.4334 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 22/60 crop 192 | train 0.8227 | val LPIPS 0.6639 | LR 4.76e-05 | λ_adv 0.005| LPIPS_reblur 0.4912 | λ_reblur 0.500
+🔄  GAN ON  (λ_adv = 0.001) at epoch 23
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 23/60 crop 256 | train 0.6902 | val LPIPS 0.6537 | LR 4.68e-05 | λ_adv 0.001| LPIPS_reblur 0.4647 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 24/60 crop 256 | train 0.6899 | val LPIPS 0.6659 | LR 4.60e-05 | λ_adv 0.002| LPIPS_reblur 0.4522 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 25/60 crop 256 | train 0.6856 | val LPIPS 0.7170 | LR 4.51e-05 | λ_adv 0.002| LPIPS_reblur 0.3694 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 26/60 crop 256 | train 0.6671 | val LPIPS 0.7198 | LR 4.41e-05 | λ_adv 0.003| LPIPS_reblur 0.4512 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 27/60 crop 256 | train 0.6619 | val LPIPS 0.7184 | LR 4.31e-05 | λ_adv 0.003| LPIPS_reblur 0.3961 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 28/60 crop 256 | train 0.6623 | val LPIPS 0.7213 | LR 4.20e-05 | λ_adv 0.004| LPIPS_reblur 0.4402 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 29/60 crop 256 | train 0.6619 | val LPIPS 0.7229 | LR 4.08e-05 | λ_adv 0.004| LPIPS_reblur 0.4841 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 30/60 crop 256 | train 0.6603 | val LPIPS 0.7218 | LR 3.96e-05 | λ_adv 0.005| LPIPS_reblur 0.4155 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 31/60 crop 256 | train 0.6583 | val LPIPS 0.7184 | LR 3.83e-05 | λ_adv 0.005| LPIPS_reblur 0.3936 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 32/60 crop 256 | train 0.6585 | val LPIPS 0.7208 | LR 3.70e-05 | λ_adv 0.006| LPIPS_reblur 0.3377 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 33/60 crop 256 | train 0.6611 | val LPIPS 0.7200 | LR 3.56e-05 | λ_adv 0.006| LPIPS_reblur 0.3684 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 34/60 crop 256 | train 0.6586 | val LPIPS 0.7206 | LR 3.43e-05 | λ_adv 0.007| LPIPS_reblur 0.5161 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 35/60 crop 256 | train 0.6568 | val LPIPS 0.7213 | LR 3.28e-05 | λ_adv 0.007| LPIPS_reblur 0.4083 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 36/60 crop 256 | train 0.6593 | val LPIPS 0.7201 | LR 3.14e-05 | λ_adv 0.008| LPIPS_reblur 0.4504 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 37/60 crop 256 | train 0.6586 | val LPIPS 0.7208 | LR 3.00e-05 | λ_adv 0.008| LPIPS_reblur 0.4826 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 38/60 crop 256 | train 0.6609 | val LPIPS 0.7218 | LR 2.86e-05 | λ_adv 0.008| LPIPS_reblur 0.4179 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 39/60 crop 256 | train 0.6573 | val LPIPS 0.7211 | LR 2.72e-05 | λ_adv 0.008| LPIPS_reblur 0.4003 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 40/60 crop 256 | train 0.6554 | val LPIPS 0.7218 | LR 2.57e-05 | λ_adv 0.008| LPIPS_reblur 0.4520 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 41/60 crop 256 | train 0.6564 | val LPIPS 0.7226 | LR 2.44e-05 | λ_adv 0.008| LPIPS_reblur 0.4399 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train 42/60:  25%|█████▉                  | 160/650 [02:55<08:47,  1.08s/it]
