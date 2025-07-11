@@ -38,7 +38,7 @@ motion_k_choices = [7, 11, 15, 21]
 #  DATASET — Blur ↔ Sharp pairs
 # ===============================
 class BlurPairDataset(Dataset):
-    def __init__(self, blur_dir, sharp_dir, burst_gen, img_size=(256,256), T=7, crop_size=224):
+    def __init__(self, blur_dir, sharp_dir, burst_gen, img_size=(128,128), T=7, crop_size=128):
         self.img_size, self.T, self.crop_size, self.burst_gen = img_size, T, crop_size, burst_gen
         exts = [".png",".PNG",".jpg",".JPG",".jpeg",".JPEG"]
         blur = sorted(sum([glob.glob(os.path.join(blur_dir,f"*{e}")) for e in exts],[]))
@@ -376,17 +376,13 @@ def train_dataset(
             else:
                 λ_reblur = λ_reblur_max
 
-            if   ep <= epochs_128:
-                crop_sz = 128
-            elif ep <= epochs_128 + epochs_192:
-                crop_sz = 192
-            else:
-                crop_sz = 256
+            crop_sz = 128  # fixed size
 
-            if not adv_on and crop_sz == 256:
+            if not adv_on and ep == 23:  # or any desired epoch for GAN to begin
                 adv_on = True
                 λ_adv  = λ_adv_init
                 print(f"🔄  GAN ON  (λ_adv = {λ_adv:.3f}) at epoch {ep}")
+
 
             # crop switch → reset LR and enable GAN
             if ep == prog_epochs + 1:
@@ -401,7 +397,7 @@ def train_dataset(
 
             # ----- loader build (unchanged) -----
             full = BlurPairDataset(blur_dir, sharp_dir, burst_gen,
-                                img_size=(256, 256), T=T, crop_size=None)
+                                img_size=(128, 128), T=T, crop_size=None)
             val_sz = 50 if len(full) > 100 else int(0.1 * len(full))
             tr_ds, va_ds = random_split(
                 full, [len(full) - val_sz, val_sz],
@@ -422,16 +418,16 @@ def train_dataset(
                 print(f"🔧  lpips_w raised to {lpips_w:.2f} at epoch {ep}")
 
             # ---- λ_adv decay schedule ----
-            if adv_on and crop_sz == 256 and ep in adv_decay:
+            if adv_on and ep in adv_decay:
                 λ_adv = adv_decay[ep]
                 λ_adv_cap = λ_adv          # <─ prevents the ramp block from climbing again
                 print(f"🔽  λ_adv decayed to {λ_adv:.3f} at epoch {ep}")
 
             # --- enable full-time LPIPS + ramp GAN in last 10 ep of Fine-tune ---
-            if name == "Pre-train" and adv_on and crop_sz == 256 and ep % 2 == 0 and λ_adv < λ_adv_cap:
+            if name == "Pre-train" and adv_on and ep % 2 == 0 and λ_adv < λ_adv_cap:
                 λ_adv = round(min(λ_adv_cap, λ_adv + λ_adv_step), 4)
 
-            if name == "Fine-tune" and crop_sz == 256 and ep in (18,):
+            if name == "Fine-tune" and ep in (18,):
                 λ_adv = 0.002     # or even 0.0 for a discriminator freeze
                 print(f"🔒 λ_adv frozen at {λ_adv:.3f} from epoch {ep}")
 
@@ -442,10 +438,7 @@ def train_dataset(
 
 
             # -------- SSIM / edge blend (Option C) --------
-            if crop_sz == 256 and ep >= 17:             # pre-train ep17 ≈ first 256-crop epoch+1
-                ssim_w = max(0.4, 0.7 - (ep - 16) * 0.05)
-            else:
-                ssim_w = 0.7
+            ssim_w = 0.7
 
             g_opt.zero_grad()
             for step, (burst, sharp) in enumerate(
