@@ -89,7 +89,8 @@ class BurstDeblurNet(nn.Module):
             depth       = 4,
             heads       = heads,
             bucket_size = bucket,   # 64 is OK for 4096 tokens
-            causal      = False)
+            causal      = False,
+            dropout     = 0.1)
 
         # ---------- decoder ----------
         self.up1  = nn.ConvTranspose2d(base*4, base*2, 4, 2, 1)
@@ -319,7 +320,7 @@ def train_dataset(
 
 
 
-        g_opt = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
+        g_opt = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), weight_decay=1e-5)
         # -------- optional resume --------
         if (name == "Pre-train" and resume_pre) or (name == "Fine-tune" and resume_ft):
             if os.path.isfile(ckpt):
@@ -353,16 +354,16 @@ def train_dataset(
 
         gan_start  = 23
 
-        λ_adv_init = 0.001       # slower, gentler start
-        λ_adv_cap  = 0.008       # lower ceiling
+        λ_adv_init = 0.0005       # slower, gentler start
+        λ_adv_cap  = 0.005       # lower ceiling
         λ_adv_step = 0.001       # add every 2 epochs
         lpips_bump_epoch = 45          # raise lpips_w at this epoch
         adv_decay = {45: 0.006,        # λ_adv decay schedule
                     50: 0.004,
                     55: 0.002}
         λ_reblur_max = 0.5
-        λ_reblur_delay = 8         # delay reblur loss start until ep ≥ 8
-        λ_reblur_ramp = 6          # gradual ramp from 0 → 0.5 over next 6 epochs
+        λ_reblur_delay = 12         # delay reblur loss start until ep ≥ 8
+        λ_reblur_ramp = 8          # gradual ramp from 0 → 0.5 over next 6 epochs
 
 
         print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
@@ -410,7 +411,8 @@ def train_dataset(
             model.train()
             run_loss = 0.0
             edge_w   = 0.02 if ep < 40 else 0.04
-            cut_p    = 0.7 if crop_sz < 161 else 0.3
+            cut_p = 0.5
+
 
             # ---- mid-run LPIPS bump ----
             if ep == lpips_bump_epoch:
@@ -424,7 +426,7 @@ def train_dataset(
                 print(f"🔽  λ_adv decayed to {λ_adv:.3f} at epoch {ep}")
 
             # --- enable full-time LPIPS + ramp GAN in last 10 ep of Fine-tune ---
-            if name == "Pre-train" and adv_on and ep % 2 == 0 and λ_adv < λ_adv_cap:
+            if name == "Pre-train" and ep >= 25 and crop_sz == 128 and ep % 2 == 0 and λ_adv < λ_adv_cap:
                 λ_adv = round(min(λ_adv_cap, λ_adv + λ_adv_step), 4)
 
             if name == "Fine-tune" and ep in (18,):
@@ -449,6 +451,8 @@ def train_dataset(
                 for frame in burst[0]:
                     if random.random() < cut_p:
                         frame, _ = cutblur(frame, tgt)
+                    if random.random() < 0.5:
+                        frame = gaussian_blur(frame, kernel_size=3)
                     frames.append(frame)
                 burst = torch.stack(frames, 0).unsqueeze(0).to(device)
                 sharp = sharp.to(device)
