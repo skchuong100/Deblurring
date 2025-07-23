@@ -412,7 +412,7 @@ def train_dataset(
             run_loss = 0.0
             edge_w   = 0.02 if ep < 40 else 0.04
             cut_p = 0.5
-            tot_ssim = tot_edge = tot_lpips = tot_reblur = tot_gan = 0.0
+            tot_ssim = tot_edge = tot_lpips = tot_reblur = tot_gan = tot_pix = 0.0
 
 
             # ---- mid-run LPIPS bump ----
@@ -441,7 +441,11 @@ def train_dataset(
 
 
             # -------- SSIM / edge blend (Option C) --------
-            ssim_w = 0.7
+            ssim_w0 = 1.0                           # start weight
+            decay   = (1 - ep / epochs)**2          # quadratic falloff
+            ssim_w  = ssim_w0 * decay               # → 0 at the final epoch
+
+
 
             g_opt.zero_grad()
             for step, (burst, sharp) in enumerate(
@@ -464,7 +468,10 @@ def train_dataset(
                     burst = lam * burst + (1 - lam) * burst[idx]
                     sharp = lam * sharp + (1 - lam) * sharp[idx]
                 fake = model(burst)
-                ss   = 1 - (ssim if crop_sz < 161 else ms_ssim)(fake, sharp, data_range=1.0)
+                ss = 1 - ms_ssim(fake, sharp,
+                 data_range=1.0,
+                 win_size=7)     # ← smaller window
+
                 tot_ssim += ss.item()
                 ed   = F.l1_loss(sobel(fake), sobel(sharp))
                 tot_edge += ed.item()
@@ -474,7 +481,11 @@ def train_dataset(
                 tot_lpips += lp.item()                 # log it
                 if (step % lpips_every) == 0:          # keep the old weighting rule
                     g_loss += lpips_w * lp
-
+                if ep >= 25:                               # “late” phase trigger
+                    pix_w     = 0.07                       # 0.05–0.10 typical
+                    pix_loss  = F.l1_loss(fake, sharp)
+                    tot_pix  += pix_loss.item()            # add this only if you log it
+                    g_loss   += pix_w * pix_loss
 
                 # --- NEW reblur-guided loss ---
                 re_k = kernel_net(fake.detach())
@@ -519,6 +530,7 @@ def train_dataset(
             avg_lpips  = tot_lpips  / n_batches
             avg_reblur = tot_reblur / n_batches
             avg_gan    = tot_gan    / n_batches   # safe even if tot_gan==0
+            avg_pix = tot_pix / n_batches
 
             # -------------- VALIDATION --------------
             torch.cuda.empty_cache()
@@ -548,10 +560,11 @@ def train_dataset(
             print(f"{name} Ep{ep:3d}/{epochs} crop {crop_sz} | "
                 f"train {tr_loss:.4f} | "
                 f"SSIM {avg_ssim:.4f} | edge {avg_edge:.4f} | "
-                f"LPIPS {avg_lpips:.4f} | reblur {avg_reblur:.4f} | "
-                f"GAN {avg_gan:.4f} | val LPIPS {v_lpips:.4f} | "
-                f"LR {g_opt.param_groups[0]['lr']:.2e} | λ_adv {λ_adv:.3f}"
-                f"| LPIPS_reblur {reblur_val:.4f} | λ_reblur {λ_reblur:.3f}")
+                f"LPIPS {avg_lpips:.4f} | pix {avg_pix:.4f} | "
+                f"reblur {avg_reblur:.4f} | GAN {avg_gan:.4f} | "
+                f"val LPIPS {v_lpips:.4f} | "
+                f"LR {g_opt.param_groups[0]['lr']:.2e} | λ_adv {λ_adv:.3f} | "
+                f"λ_reblur {λ_reblur:.3f}")
 
 
             if not math.isnan(v_lpips) and v_lpips < best_lpips:
