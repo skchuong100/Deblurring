@@ -278,7 +278,7 @@ def burst_gen_identity(img, num_variants=1):
 
 def train_dataset(
         blur_dir, sharp_dir,
-        epochs_pre=60, epochs_ft=40,
+        epochs_pre=200, epochs_ft=130,
         batch=2,
         lr_pre=1e-4, lr_ft=5e-5,
         prog_epochs=20,            # 1-20 → 128², then 256²
@@ -599,6 +599,11 @@ def train_dataset(
 if __name__ == "__main__":
     torch.cuda.empty_cache()
     ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    BLUR_DIR  = os.path.join(ROOT, "photos", "motion_blurred")
-    SHARP_DIR = os.path.join(ROOT, "photos", "sharp")
+    # --- Blur dataset ---
+    #BLUR_DIR  = os.path.join(ROOT, "photos", "motion_blurred")
+    #SHARP_DIR = os.path.join(ROOT, "photos", "sharp")
+    # --------------------
+    BLUR_DIR  = os.path.join(ROOT, "photos", "horizonal_mb")   # ← match the real folder
+    SHARP_DIR = os.path.join(ROOT, "photos", "resizeimage")
+
     train_dataset(BLUR_DIR, SHARP_DIR)
