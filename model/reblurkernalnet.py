@@ -89,7 +89,8 @@ class BurstDeblurNet(nn.Module):
             depth       = 4,
             heads       = heads,
             bucket_size = bucket,   # 64 is OK for 4096 tokens
-            causal      = False)
+            causal      = False,
+            )
 
         # ---------- decoder ----------
         self.up1  = nn.ConvTranspose2d(base*4, base*2, 4, 2, 1)
@@ -238,8 +239,8 @@ class ReblurKernelNet(nn.Module):
         super().__init__()
         self.kernel_size = kernel_size
         self.predictor = nn.Sequential(
-            nn.Conv2d(in_channels, 32, 3, padding=1), nn.ReLU(),
-            nn.Conv2d(32, 64, 3, padding=1), nn.ReLU(),
+            nn.Conv2d(in_channels, 32, 3, padding=1), nn.BatchNorm2d(32), nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1), nn.BatchNorm2d(64), nn.ReLU(),
             nn.Conv2d(64, kernel_size**2, 1)
         )
 
@@ -319,7 +320,7 @@ def train_dataset(
 
 
 
-        g_opt = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
+        g_opt = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), weight_decay=1e-5)
         # -------- optional resume --------
         if (name == "Pre-train" and resume_pre) or (name == "Fine-tune" and resume_ft):
             if os.path.isfile(ckpt):
@@ -342,7 +343,7 @@ def train_dataset(
 
         prog_epochs   = 15
         accum_steps   = 2
-        lpips_every   = 4
+        lpips_every   = 1
         lpips_w       = 0.35                   # default perceptual weight
         λ_adv_initial = 0.002                  # initial GAN weight
         lr_frozen = False
@@ -353,15 +354,15 @@ def train_dataset(
 
         gan_start  = 23
 
-        λ_adv_init = 0.001       # slower, gentler start
-        λ_adv_cap  = 0.008       # lower ceiling
+        λ_adv_init = 0.0005       # slower, gentler start
+        λ_adv_cap  = 0.005       # lower ceiling
         λ_adv_step = 0.001       # add every 2 epochs
         lpips_bump_epoch = 45          # raise lpips_w at this epoch
         adv_decay = {45: 0.006,        # λ_adv decay schedule
                     50: 0.004,
                     55: 0.002}
-        λ_reblur_max = 0.5
-        λ_reblur_delay = 8         # delay reblur loss start until ep ≥ 8
+        λ_reblur_max = 0.35
+        λ_reblur_delay = 20         # delay reblur loss start until ep ≥ 8
         λ_reblur_ramp = 6          # gradual ramp from 0 → 0.5 over next 6 epochs
 
 
@@ -410,7 +411,9 @@ def train_dataset(
             model.train()
             run_loss = 0.0
             edge_w   = 0.02 if ep < 40 else 0.04
-            cut_p    = 0.7 if crop_sz < 161 else 0.3
+            cut_p = 0.5
+            tot_ssim = tot_edge = tot_lpips = tot_reblur = tot_gan = tot_pix = 0.0
+
 
             # ---- mid-run LPIPS bump ----
             if ep == lpips_bump_epoch:
@@ -424,7 +427,7 @@ def train_dataset(
                 print(f"🔽  λ_adv decayed to {λ_adv:.3f} at epoch {ep}")
 
             # --- enable full-time LPIPS + ramp GAN in last 10 ep of Fine-tune ---
-            if name == "Pre-train" and adv_on and ep % 2 == 0 and λ_adv < λ_adv_cap:
+            if name == "Pre-train" and ep >= 25 and crop_sz == 128 and ep % 2 == 0 and λ_adv < λ_adv_cap:
                 λ_adv = round(min(λ_adv_cap, λ_adv + λ_adv_step), 4)
 
             if name == "Fine-tune" and ep in (18,):
@@ -438,7 +441,11 @@ def train_dataset(
 
 
             # -------- SSIM / edge blend (Option C) --------
-            ssim_w = 0.7
+            ssim_w0 = 1.0                           # start weight
+            decay   = (1 - ep / epochs)**2          # quadratic falloff
+            ssim_w  = ssim_w0 * decay               # → 0 at the final epoch
+
+
 
             g_opt.zero_grad()
             for step, (burst, sharp) in enumerate(
@@ -449,19 +456,36 @@ def train_dataset(
                 for frame in burst[0]:
                     if random.random() < cut_p:
                         frame, _ = cutblur(frame, tgt)
+                    if random.random() < 0.5:
+                        frame = gaussian_blur(frame, kernel_size=3)
                     frames.append(frame)
                 burst = torch.stack(frames, 0).unsqueeze(0).to(device)
                 sharp = sharp.to(device)
                 blur_input = burst[:,0]  # blurry input frame
-
+                if random.random() < 0.5:
+                    lam = np.random.beta(0.4, 0.4)
+                    idx = torch.randperm(burst.size(0))
+                    burst = lam * burst + (1 - lam) * burst[idx]
+                    sharp = lam * sharp + (1 - lam) * sharp[idx]
                 fake = model(burst)
-                ss   = 1 - (ssim if crop_sz < 161 else ms_ssim)(fake, sharp, data_range=1.0)
+                ss = 1 - ms_ssim(fake, sharp,
+                 data_range=1.0,
+                 win_size=7)     # ← smaller window
+
+                tot_ssim += ss.item()
                 ed   = F.l1_loss(sobel(fake), sobel(sharp))
+                tot_edge += ed.item()
                 g_loss = ssim_w * ss + (1 - ssim_w) * ed
 
-                if (step % lpips_every) == 0:
-                    lp = lpips_fn(fake, sharp).mean()
+                lp = lpips_fn(fake, sharp).mean()      # ← compute every batch
+                tot_lpips += lp.item()                 # log it
+                if (step % lpips_every) == 0:          # keep the old weighting rule
                     g_loss += lpips_w * lp
+                if ep >= 25:                               # “late” phase trigger
+                    pix_w     = 0.07                       # 0.05–0.10 typical
+                    pix_loss  = F.l1_loss(fake, sharp)
+                    tot_pix  += pix_loss.item()            # add this only if you log it
+                    g_loss   += pix_w * pix_loss
 
                 # --- NEW reblur-guided loss ---
                 re_k = kernel_net(fake.detach())
@@ -473,6 +497,7 @@ def train_dataset(
                         f"debug/reblur_ep{ep:03}.png"
                     )
                 loss_reblur = lpips_fn(reblurred, blur_input).mean()
+                tot_reblur += loss_reblur.item()
                 reblur_val = loss_reblur.item()
                 g_loss += λ_reblur * loss_reblur
                 loss_reg = (re_k ** 2).mean()
@@ -480,7 +505,17 @@ def train_dataset(
 
 
                 if adv_on:
-                    g_loss += λ_adv * bce(D(fake), torch.ones_like(D(fake)))
+                    d_out = D(fake)
+                    real_label = torch.full_like(D(fake), 0.9)
+                    g_loss += λ_adv * bce(D(fake), real_label)
+                    grad_out = torch.autograd.grad(
+                    outputs=d_out.sum(), inputs=fake, create_graph=True, retain_graph=True
+                )[0]
+                    gan_term   = λ_adv * bce(d_out, real_label)
+                    g_loss    += gan_term
+                    tot_gan   += gan_term.item()
+
+
 
                 (g_loss / accum_steps).backward()
                 run_loss += g_loss.item()
@@ -489,6 +524,13 @@ def train_dataset(
                     g_opt.step(); g_opt.zero_grad()
 
             tr_loss = run_loss / len(tr_ld)
+            n_batches  = len(tr_ld)
+            avg_ssim   = tot_ssim   / n_batches
+            avg_edge   = tot_edge   / n_batches
+            avg_lpips  = tot_lpips  / n_batches
+            avg_reblur = tot_reblur / n_batches
+            avg_gan    = tot_gan    / n_batches   # safe even if tot_gan==0
+            avg_pix = tot_pix / n_batches
 
             # -------------- VALIDATION --------------
             torch.cuda.empty_cache()
@@ -516,9 +558,13 @@ def train_dataset(
                     g["lr"] = min_lr_freeze
 
             print(f"{name} Ep{ep:3d}/{epochs} crop {crop_sz} | "
-                f"train {tr_loss:.4f} | val LPIPS {v_lpips:.4f} | "
-                f"LR {g_opt.param_groups[0]['lr']:.2e} | λ_adv {λ_adv:.3f}"
-                f"| LPIPS_reblur {reblur_val:.4f} | λ_reblur {λ_reblur:.3f}")
+                f"train {tr_loss:.4f} | "
+                f"SSIM {avg_ssim:.4f} | edge {avg_edge:.4f} | "
+                f"LPIPS {avg_lpips:.4f} | pix {avg_pix:.4f} | "
+                f"reblur {avg_reblur:.4f} | GAN {avg_gan:.4f} | "
+                f"val LPIPS {v_lpips:.4f} | "
+                f"LR {g_opt.param_groups[0]['lr']:.2e} | λ_adv {λ_adv:.3f} | "
+                f"λ_reblur {λ_reblur:.3f}")
 
 
             if not math.isnan(v_lpips) and v_lpips < best_lpips:

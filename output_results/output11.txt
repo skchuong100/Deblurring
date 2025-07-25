@@ -1,0 +1,215 @@
+  self.load_state_dict(torch.load(model_path, map_location='cpu'), strict=False)
+=== Pre-train: 60 epochs, lr=1.0e-04 ===
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  1/60 crop 128 | train 0.5656 | val LPIPS 0.6476 | LR 9.99e-05 | λ_adv 0.005| LPIPS_reblur 0.5342 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  2/60 crop 128 | train 0.5507 | val LPIPS 0.6208 | LR 9.97e-05 | λ_adv 0.005| LPIPS_reblur 0.5005 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  3/60 crop 128 | train 0.5499 | val LPIPS 0.6155 | LR 9.94e-05 | λ_adv 0.005| LPIPS_reblur 0.4653 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  4/60 crop 128 | train 0.5444 | val LPIPS 0.6023 | LR 9.90e-05 | λ_adv 0.005| LPIPS_reblur 0.3887 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  5/60 crop 128 | train 0.5450 | val LPIPS 0.5948 | LR 9.84e-05 | λ_adv 0.005| LPIPS_reblur 0.4633 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  6/60 crop 128 | train 0.5409 | val LPIPS 0.5950 | LR 9.77e-05 | λ_adv 0.005| LPIPS_reblur 0.5466 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  7/60 crop 128 | train 0.5410 | val LPIPS 0.5919 | LR 9.68e-05 | λ_adv 0.005| LPIPS_reblur 0.4200 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  8/60 crop 128 | train 0.5643 | val LPIPS 0.5864 | LR 9.59e-05 | λ_adv 0.005| LPIPS_reblur 0.4899 | λ_reblur 0.050
+Loaded 700 blur↔sharp pairs
+Pre-train Ep  9/60 crop 128 | train 0.5833 | val LPIPS 0.5880 | LR 9.48e-05 | λ_adv 0.005| LPIPS_reblur 0.3477 | λ_reblur 0.100
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 10/60 crop 128 | train 0.6056 | val LPIPS 0.5825 | LR 9.36e-05 | λ_adv 0.005| LPIPS_reblur 0.4172 | λ_reblur 0.150
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 11/60 crop 128 | train 0.6256 | val LPIPS 0.5839 | LR 9.23e-05 | λ_adv 0.005| LPIPS_reblur 0.4002 | λ_reblur 0.200
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 12/60 crop 128 | train 0.6471 | val LPIPS 0.5815 | LR 9.09e-05 | λ_adv 0.005| LPIPS_reblur 0.4894 | λ_reblur 0.250
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 13/60 crop 128 | train 0.6634 | val LPIPS 0.5826 | LR 8.94e-05 | λ_adv 0.005| LPIPS_reblur 0.3677 | λ_reblur 0.300
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 14/60 crop 128 | train 0.6873 | val LPIPS 0.5780 | LR 8.78e-05 | λ_adv 0.005| LPIPS_reblur 0.3800 | λ_reblur 0.350
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 15/60 crop 128 | train 0.7057 | val LPIPS 0.5789 | LR 8.61e-05 | λ_adv 0.005| LPIPS_reblur 0.3383 | λ_reblur 0.400
+🔄  LR reset to 5e-5 at ep 16
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 16/60 crop 128 | train 0.7189 | val LPIPS 0.5738 | LR 4.99e-05 | λ_adv 0.005| LPIPS_reblur 0.3966 | λ_reblur 0.450
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 17/60 crop 128 | train 0.7398 | val LPIPS 0.5760 | LR 4.98e-05 | λ_adv 0.005| LPIPS_reblur 0.4591 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 18/60 crop 128 | train 0.7412 | val LPIPS 0.5764 | LR 4.95e-05 | λ_adv 0.005| LPIPS_reblur 0.3312 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 19/60 crop 128 | train 0.7388 | val LPIPS 0.5755 | LR 4.92e-05 | λ_adv 0.005| LPIPS_reblur 0.4007 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 20/60 crop 128 | train 0.7371 | val LPIPS 0.5739 | LR 4.87e-05 | λ_adv 0.005| LPIPS_reblur 0.3691 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 21/60 crop 128 | train 0.7368 | val LPIPS 0.5752 | LR 4.82e-05 | λ_adv 0.005| LPIPS_reblur 0.4486 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 22/60 crop 128 | train 0.7321 | val LPIPS 0.5747 | LR 4.76e-05 | λ_adv 0.005| LPIPS_reblur 0.5296 | λ_reblur 0.500
+🔄  GAN ON  (λ_adv = 0.001) at epoch 23
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 23/60 crop 128 | train 0.7343 | val LPIPS 0.5728 | LR 4.68e-05 | λ_adv 0.001| LPIPS_reblur 0.3320 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 24/60 crop 128 | train 0.7362 | val LPIPS 0.5730 | LR 4.60e-05 | λ_adv 0.001| LPIPS_reblur 0.3690 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 25/60 crop 128 | train 0.7345 | val LPIPS 0.5739 | LR 4.51e-05 | λ_adv 0.001| LPIPS_reblur 0.3183 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 26/60 crop 128 | train 0.7329 | val LPIPS 0.5741 | LR 4.41e-05 | λ_adv 0.002| LPIPS_reblur 0.4880 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 27/60 crop 128 | train 0.7378 | val LPIPS 0.5736 | LR 4.31e-05 | λ_adv 0.002| LPIPS_reblur 0.5049 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 28/60 crop 128 | train 0.7322 | val LPIPS 0.5727 | LR 4.20e-05 | λ_adv 0.003| LPIPS_reblur 0.3963 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 29/60 crop 128 | train 0.7308 | val LPIPS 0.5744 | LR 4.08e-05 | λ_adv 0.003| LPIPS_reblur 0.3633 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 30/60 crop 128 | train 0.7293 | val LPIPS 0.5755 | LR 3.96e-05 | λ_adv 0.004| LPIPS_reblur 0.4903 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 31/60 crop 128 | train 0.7334 | val LPIPS 0.5745 | LR 3.83e-05 | λ_adv 0.004| LPIPS_reblur 0.4311 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 32/60 crop 128 | train 0.7326 | val LPIPS 0.5706 | LR 3.70e-05 | λ_adv 0.004| LPIPS_reblur 0.3956 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 33/60 crop 128 | train 0.7303 | val LPIPS 0.5715 | LR 3.56e-05 | λ_adv 0.004| LPIPS_reblur 0.4875 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 34/60 crop 128 | train 0.7336 | val LPIPS 0.5754 | LR 3.43e-05 | λ_adv 0.005| LPIPS_reblur 0.4737 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 35/60 crop 128 | train 0.7314 | val LPIPS 0.5701 | LR 3.28e-05 | λ_adv 0.005| LPIPS_reblur 0.3529 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 36/60 crop 128 | train 0.7305 | val LPIPS 0.5727 | LR 3.14e-05 | λ_adv 0.005| LPIPS_reblur 0.4483 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 37/60 crop 128 | train 0.7275 | val LPIPS 0.5731 | LR 3.00e-05 | λ_adv 0.005| LPIPS_reblur 0.4007 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 38/60 crop 128 | train 0.7302 | val LPIPS 0.5690 | LR 2.86e-05 | λ_adv 0.005| LPIPS_reblur 0.3844 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 39/60 crop 128 | train 0.7312 | val LPIPS 0.5708 | LR 2.72e-05 | λ_adv 0.005| LPIPS_reblur 0.3314 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 40/60 crop 128 | train 0.7305 | val LPIPS 0.5699 | LR 2.57e-05 | λ_adv 0.005| LPIPS_reblur 0.4901 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 41/60 crop 128 | train 0.7292 | val LPIPS 0.5675 | LR 2.44e-05 | λ_adv 0.005| LPIPS_reblur 0.4026 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 42/60 crop 128 | train 0.7298 | val LPIPS 0.5680 | LR 2.30e-05 | λ_adv 0.005| LPIPS_reblur 0.3467 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 43/60 crop 128 | train 0.7289 | val LPIPS 0.5725 | LR 2.17e-05 | λ_adv 0.005| LPIPS_reblur 0.4079 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 44/60 crop 128 | train 0.7247 | val LPIPS 0.5678 | LR 2.04e-05 | λ_adv 0.005| LPIPS_reblur 0.4027 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+🔧  lpips_w raised to 0.50 at epoch 45
+🔽  λ_adv decayed to 0.006 at epoch 45
+Pre-train Ep 45/60 crop 128 | train 0.7461 | val LPIPS 0.5658 | LR 1.92e-05 | λ_adv 0.006| LPIPS_reblur 0.3840 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 46/60 crop 128 | train 0.7462 | val LPIPS 0.5639 | LR 1.80e-05 | λ_adv 0.006| LPIPS_reblur 0.2962 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 47/60 crop 128 | train 0.7441 | val LPIPS 0.5641 | LR 1.69e-05 | λ_adv 0.006| LPIPS_reblur 0.3170 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 48/60 crop 128 | train 0.7407 | val LPIPS 0.5693 | LR 1.59e-05 | λ_adv 0.006| LPIPS_reblur 0.4376 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 49/60 crop 128 | train 0.7475 | val LPIPS 0.5652 | LR 1.49e-05 | λ_adv 0.006| LPIPS_reblur 0.3917 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+🔽  λ_adv decayed to 0.004 at epoch 50
+Pre-train Ep 50/60 crop 128 | train 0.7442 | val LPIPS 0.5641 | LR 1.40e-05 | λ_adv 0.004| LPIPS_reblur 0.2624 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 51/60 crop 128 | train 0.7425 | val LPIPS 0.5647 | LR 1.32e-05 | λ_adv 0.004| LPIPS_reblur 0.2568 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 52/60 crop 128 | train 0.7416 | val LPIPS 0.5629 | LR 1.24e-05 | λ_adv 0.004| LPIPS_reblur 0.4052 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 53/60 crop 128 | train 0.7430 | val LPIPS 0.5632 | LR 1.18e-05 | λ_adv 0.004| LPIPS_reblur 0.3498 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 54/60 crop 128 | train 0.7462 | val LPIPS 0.5660 | LR 1.13e-05 | λ_adv 0.004| LPIPS_reblur 0.2812 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+🔽  λ_adv decayed to 0.002 at epoch 55
+Pre-train Ep 55/60 crop 128 | train 0.7407 | val LPIPS 0.5624 | LR 1.08e-05 | λ_adv 0.002| LPIPS_reblur 0.4552 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 56/60 crop 128 | train 0.7396 | val LPIPS 0.5663 | LR 1.05e-05 | λ_adv 0.002| LPIPS_reblur 0.3787 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 57/60 crop 128 | train 0.7403 | val LPIPS 0.5647 | LR 1.02e-05 | λ_adv 0.002| LPIPS_reblur 0.3468 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 58/60 crop 128 | train 0.7384 | val LPIPS 0.5650 | LR 1.01e-05 | λ_adv 0.002| LPIPS_reblur 0.3664 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+🧊  LR frozen at 1.00e-05 from epoch 59
+Pre-train Ep 59/60 crop 128 | train 0.7401 | val LPIPS 0.5646 | LR 1.00e-05 | λ_adv 0.002| LPIPS_reblur 0.3784 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Pre-train Ep 60/60 crop 128 | train 0.7375 | val LPIPS 0.5616 | LR 1.00e-05 | λ_adv 0.002| LPIPS_reblur 0.3347 | λ_reblur 0.500
+=== Fine-tune: 40 epochs, lr=5.0e-05 ===
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  1/40 crop 128 | train 0.5370 | val LPIPS 0.5121 | LR 4.99e-05 | λ_adv 0.002| LPIPS_reblur 0.4992 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  2/40 crop 128 | train 0.5315 | val LPIPS 0.5028 | LR 4.97e-05 | λ_adv 0.002| LPIPS_reblur 0.5966 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  3/40 crop 128 | train 0.5284 | val LPIPS 0.5002 | LR 4.94e-05 | λ_adv 0.002| LPIPS_reblur 0.4874 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  4/40 crop 128 | train 0.5305 | val LPIPS 0.4907 | LR 4.88e-05 | λ_adv 0.002| LPIPS_reblur 0.6062 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  5/40 crop 128 | train 0.5257 | val LPIPS 0.4964 | LR 4.82e-05 | λ_adv 0.002| LPIPS_reblur 0.5474 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  6/40 crop 128 | train 0.5257 | val LPIPS 0.4928 | LR 4.74e-05 | λ_adv 0.002| LPIPS_reblur 0.5286 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  7/40 crop 128 | train 0.5251 | val LPIPS 0.4944 | LR 4.65e-05 | λ_adv 0.002| LPIPS_reblur 0.5945 | λ_reblur 0.000
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  8/40 crop 128 | train 0.5525 | val LPIPS 0.5034 | LR 4.55e-05 | λ_adv 0.002| LPIPS_reblur 0.4743 | λ_reblur 0.050
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep  9/40 crop 128 | train 0.5756 | val LPIPS 0.4932 | LR 4.44e-05 | λ_adv 0.002| LPIPS_reblur 0.5473 | λ_reblur 0.100
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 10/40 crop 128 | train 0.6016 | val LPIPS 0.4976 | LR 4.31e-05 | λ_adv 0.002| LPIPS_reblur 0.5465 | λ_reblur 0.150
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 11/40 crop 128 | train 0.6218 | val LPIPS 0.4866 | LR 4.18e-05 | λ_adv 0.002| LPIPS_reblur 0.5144 | λ_reblur 0.200
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 12/40 crop 128 | train 0.6445 | val LPIPS 0.4952 | LR 4.03e-05 | λ_adv 0.002| LPIPS_reblur 0.5453 | λ_reblur 0.250
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 13/40 crop 128 | train 0.6704 | val LPIPS 0.5027 | LR 3.88e-05 | λ_adv 0.002| LPIPS_reblur 0.5352 | λ_reblur 0.300
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 14/40 crop 128 | train 0.6919 | val LPIPS 0.4887 | LR 3.72e-05 | λ_adv 0.002| LPIPS_reblur 0.4636 | λ_reblur 0.350
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 15/40 crop 128 | train 0.7171 | val LPIPS 0.4902 | LR 3.55e-05 | λ_adv 0.002| LPIPS_reblur 0.3404 | λ_reblur 0.400
+🔄  LR reset to 5e-5 at ep 16
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 16/40 crop 128 | train 0.7414 | val LPIPS 0.4946 | LR 4.98e-05 | λ_adv 0.002| LPIPS_reblur 0.5071 | λ_reblur 0.450
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 17/40 crop 128 | train 0.7649 | val LPIPS 0.4960 | LR 4.93e-05 | λ_adv 0.002| LPIPS_reblur 0.4846 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+🔒 λ_adv frozen at 0.002 from epoch 18
+🔧 lpips_w raised to 0.60 at epoch 18
+Fine-tune Ep 18/40 crop 128 | train 0.7919 | val LPIPS 0.4864 | LR 4.85e-05 | λ_adv 0.002| LPIPS_reblur 0.4631 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 19/40 crop 128 | train 0.7948 | val LPIPS 0.4913 | LR 4.73e-05 | λ_adv 0.002| LPIPS_reblur 0.4740 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 20/40 crop 128 | train 0.7878 | val LPIPS 0.4895 | LR 4.59e-05 | λ_adv 0.002| LPIPS_reblur 0.4943 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 21/40 crop 128 | train 0.7913 | val LPIPS 0.4857 | LR 4.41e-05 | λ_adv 0.002| LPIPS_reblur 0.3365 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 22/40 crop 128 | train 0.7876 | val LPIPS 0.4894 | LR 4.22e-05 | λ_adv 0.002| LPIPS_reblur 0.4714 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 23/40 crop 128 | train 0.7842 | val LPIPS 0.4901 | LR 4.00e-05 | λ_adv 0.002| LPIPS_reblur 0.4894 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 24/40 crop 128 | train 0.7821 | val LPIPS 0.4847 | LR 3.77e-05 | λ_adv 0.002| LPIPS_reblur 0.4902 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 25/40 crop 128 | train 0.7813 | val LPIPS 0.4887 | LR 3.52e-05 | λ_adv 0.002| LPIPS_reblur 0.4960 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 26/40 crop 128 | train 0.7813 | val LPIPS 0.4856 | LR 3.26e-05 | λ_adv 0.002| LPIPS_reblur 0.4726 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 27/40 crop 128 | train 0.7769 | val LPIPS 0.4873 | LR 3.00e-05 | λ_adv 0.002| LPIPS_reblur 0.5343 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 28/40 crop 128 | train 0.7784 | val LPIPS 0.4851 | LR 2.74e-05 | λ_adv 0.002| LPIPS_reblur 0.4255 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 29/40 crop 128 | train 0.7736 | val LPIPS 0.4890 | LR 2.48e-05 | λ_adv 0.002| LPIPS_reblur 0.5096 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 30/40 crop 128 | train 0.7745 | val LPIPS 0.4880 | LR 2.23e-05 | λ_adv 0.002| LPIPS_reblur 0.4677 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 31/40 crop 128 | train 0.7706 | val LPIPS 0.4887 | LR 2.00e-05 | λ_adv 0.002| LPIPS_reblur 0.4816 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 32/40 crop 128 | train 0.7715 | val LPIPS 0.4894 | LR 1.78e-05 | λ_adv 0.002| LPIPS_reblur 0.4697 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 33/40 crop 128 | train 0.7672 | val LPIPS 0.4885 | LR 1.59e-05 | λ_adv 0.002| LPIPS_reblur 0.4854 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 34/40 crop 128 | train 0.7690 | val LPIPS 0.4899 | LR 1.41e-05 | λ_adv 0.002| LPIPS_reblur 0.4157 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 35/40 crop 128 | train 0.7701 | val LPIPS 0.4888 | LR 1.27e-05 | λ_adv 0.002| LPIPS_reblur 0.4469 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 36/40 crop 128 | train 0.7689 | val LPIPS 0.4909 | LR 1.15e-05 | λ_adv 0.002| LPIPS_reblur 0.4792 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 37/40 crop 128 | train 0.7639 | val LPIPS 0.4903 | LR 1.07e-05 | λ_adv 0.002| LPIPS_reblur 0.5035 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 38/40 crop 128 | train 0.7623 | val LPIPS 0.4893 | LR 1.02e-05 | λ_adv 0.002| LPIPS_reblur 0.4392 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+🧊  LR frozen at 1.00e-05 from epoch 39
+Fine-tune Ep 39/40 crop 128 | train 0.7624 | val LPIPS 0.4893 | LR 1.00e-05 | λ_adv 0.002| LPIPS_reblur 0.4246 | λ_reblur 0.500
+Loaded 700 blur↔sharp pairs
+Fine-tune Ep 40/40 crop 128 | train 0.7623 | val LPIPS 0.4887 | LR 1.00e-05 | λ_adv 0.002| LPIPS_reblur 0.4689 | λ_reblur 0.500
+🏁  Total runtime: 7 h 46 m 50 s
