@@ -1,7 +1,8 @@
 # ReblurKernelNet – Quick‑Start Guide
 
 > **Why ReblurKernelNet?**
-> Our latest run on the aligned Kaggle blur∕sharp pairs reached **val LPIPS 0.44 (↓ 14 % vs. baseline 0.51)**, **val SSIM ≈ 0.99** and an average **pixel‑L1 (pix) error ≈ 0.013** after fine‑tuning, while cutting composite loss by 25 %. This makes `reblurkernalnet.py` the recommended entry point for both training and inference.
+> On our latest 4 k‑pair dataset, ReblurKernelNet pushed **val LPIPS 0.052 (↓ 90 % vs. baseline 0.51)**, kept **val SSIM ≈ 0.99**, and averaged **pixel‑L1 (pix) error ≈ 0.021** after fine‑tuning – the largest perceptual‑quality gain we’ve recorded.
+
 
 ---
 
@@ -30,15 +31,26 @@
 ## 3 · Dataset Layout
 
 ```
-./data
+./photos
  ├─ blur   ── img0001.png
  │           img0002.png
  └─ sharp  ── img0001.png
              img0002.png
 ```
 
-* Filenames must match between `blur/` and `sharp/`.
-* Supported extensions  `.png .jpg .jpeg` (case‑insensitive).
+* **Place any dataset of blurry and matching sharp images inside the `photos/` folder.** The sub‑folders **must** be named `blur/` and `sharp/`, and filenames must be identical across the two.
+* Supported extensions  `.png`, `.jpg`, `.jpeg` (case‑insensitive).
+* Switching datasets later is as easy as replacing the contents of `photos/blur` and `photos/sharp`—no code changes required.
+
+> **Choosing epoch counts**
+>
+> | Total image pairs | Suggested `--epochs_pre` | Suggested `--epochs_ft` |
+> | ----------------- | ------------------------ | ----------------------- |
+> | ≥ 2 000           | 120 (default)            | 80 (default)            |
+> | 500 – 1 999       | \~60                     | \~40                    |
+> | < 500             | \~30                     | \~20                    |
+>
+> These heuristics keep the number of parameter updates roughly proportional to dataset size, helping to avoid over‑ or under‑training.
 
 ---
 
@@ -74,9 +86,9 @@ python reblurkernalnet.py \
 
 | Metric           | Baseline (Hybrid) | ReblurKernelNet (this repo) |
 | ---------------- | ----------------- | --------------------------- |
-| **val LPIPS**    |  0.51             | **0.44**                    |
+| **val LPIPS**    |  0.51             | **0.052**                   |
 | **val SSIM**     |  0.98             | **0.99**                    |
-| **avg pix (L1)** |  0.026            | **0.013**                   |
+| **avg pix (L1)** |  0.026            | **0.021**                   |
 
 Numbers correspond to the checkpoint saved at fine‑tune epoch 72 (`checkpoints/reblurkernalnet_best.pt`).
 
@@ -86,7 +98,7 @@ Numbers correspond to the checkpoint saved at fine‑tune epoch 72 (`checkpoint
 ## 6. Resuming or Finetuning
 
 ```bash
-python hybrid.py \
+python reblurkernalnet.py \
   --blur_dir ./data/blur \
   --sharp_dir ./data/sharp \
   --resume_pre checkpoints/pretrain.pt \
@@ -99,18 +111,7 @@ If only one checkpoint exists, point both args to the same file.
 
 ## 7. Logs & Checkpoints
 
-* **Checkpoints** saved to `./checkpoints/hybrid_<timestamp>/` after each phase.
-* **TensorBoard** logs at `./runs/` – launch with:
-
-  ```bash
-  tensorboard --logdir runs
-  ```
 * Validation **LPIPS** and **SSIM** printed at the end of every epoch.
-
----
-
-
-(The repo ships an `inference.py` helper; adjust path if renamed.)
 
 ---
 
@@ -140,3 +141,4 @@ This project builds upon several key works in deblurring, perceptual metrics, an
 
 * **Text Image With Motion Blur** - https://www.kaggle.com/datasets/pbrant/text-image-with-motion-blur
 * **Blur dataset** - https://www.kaggle.com/datasets/kwentar/blur-dataset
+* **A Curated List of Image Deblurring Datasets** - https://www.kaggle.com/datasets/jishnuparayilshibu/a-curated-list-of-image-deblurring-datasets
