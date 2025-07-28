@@ -278,7 +278,7 @@ def burst_gen_identity(img, num_variants=1):
 
 def train_dataset(
         blur_dir, sharp_dir,
-        epochs_pre=200, epochs_ft=130,
+        epochs_pre=25, epochs_ft=15,
         batch=2,
         lr_pre=1e-4, lr_ft=5e-5,
         prog_epochs=20,            # 1-20 → 128², then 256²
@@ -357,10 +357,10 @@ def train_dataset(
         λ_adv_init = 0.0005       # slower, gentler start
         λ_adv_cap  = 0.005       # lower ceiling
         λ_adv_step = 0.001       # add every 2 epochs
-        lpips_bump_epoch = 45          # raise lpips_w at this epoch
-        adv_decay = {45: 0.006,        # λ_adv decay schedule
-                    50: 0.004,
-                    55: 0.002}
+        lpips_bump_epoch = 18         # raise lpips_w at this epoch
+        adv_decay = {20: 0.006,        # λ_adv decay schedule
+                    15: 0.004,
+                    10: 0.002}
         λ_reblur_max = 0.35
         λ_reblur_delay = 20         # delay reblur loss start until ep ≥ 8
         λ_reblur_ramp = 6          # gradual ramp from 0 → 0.5 over next 6 epochs
@@ -379,7 +379,7 @@ def train_dataset(
 
             crop_sz = 128  # fixed size
 
-            if not adv_on and ep == 23:  # or any desired epoch for GAN to begin
+            if not adv_on and ep == 10:  # or any desired epoch for GAN to begin
                 adv_on = True
                 λ_adv  = λ_adv_init
                 print(f"🔄  GAN ON  (λ_adv = {λ_adv:.3f}) at epoch {ep}")
@@ -427,14 +427,14 @@ def train_dataset(
                 print(f"🔽  λ_adv decayed to {λ_adv:.3f} at epoch {ep}")
 
             # --- enable full-time LPIPS + ramp GAN in last 10 ep of Fine-tune ---
-            if name == "Pre-train" and ep >= 25 and crop_sz == 128 and ep % 2 == 0 and λ_adv < λ_adv_cap:
+            if name == "Pre-train" and ep >= 12 and crop_sz == 128 and ep % 2 == 0 and λ_adv < λ_adv_cap:
                 λ_adv = round(min(λ_adv_cap, λ_adv + λ_adv_step), 4)
 
-            if name == "Fine-tune" and ep in (18,):
+            if name == "Fine-tune" and ep in (7,):
                 λ_adv = 0.002     # or even 0.0 for a discriminator freeze
                 print(f"🔒 λ_adv frozen at {λ_adv:.3f} from epoch {ep}")
 
-            if name == "Fine-tune" and ep == 18:
+            if name == "Fine-tune" and ep == 7:
                 lpips_w = 0.60
                 print(f"🔧 lpips_w raised to {lpips_w:.2f} at epoch {ep}")
 
@@ -481,7 +481,7 @@ def train_dataset(
                 tot_lpips += lp.item()                 # log it
                 if (step % lpips_every) == 0:          # keep the old weighting rule
                     g_loss += lpips_w * lp
-                if ep >= 25:                               # “late” phase trigger
+                if ep >= 12:                               # “late” phase trigger
                     pix_w     = 0.07                       # 0.05–0.10 typical
                     pix_loss  = F.l1_loss(fake, sharp)
                     tot_pix  += pix_loss.item()            # add this only if you log it
@@ -603,7 +603,12 @@ if __name__ == "__main__":
     #BLUR_DIR  = os.path.join(ROOT, "photos", "motion_blurred")
     #SHARP_DIR = os.path.join(ROOT, "photos", "sharp")
     # --------------------
-    BLUR_DIR  = os.path.join(ROOT, "photos", "horizonal_mb")   # ← match the real folder
-    SHARP_DIR = os.path.join(ROOT, "photos", "resizeimage")
+    # --- Book dataset ---
+    #BLUR_DIR  = os.path.join(ROOT, "photos", "horizonal_mb")
+    #SHARP_DIR = os.path.join(ROOT, "photos", "resizeimage")
+    # --------------------
+    # --- Better dataset ---
+    BLUR_DIR  = os.path.join(ROOT, "photos", "train_blur")
+    SHARP_DIR = os.path.join(ROOT, "photos", "train_sharp")
 
     train_dataset(BLUR_DIR, SHARP_DIR)
