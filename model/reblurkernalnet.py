@@ -1,12 +1,3 @@
-# ------------------------------------------------------------
-# Burst Deblur Training Script (updated)
-# ------------------------------------------------------------
-# Changes in this version
-#   • Adds StepLR scheduler (halve LR every 20 epochs)
-#   • Saves best checkpoint to "burst_deblur_best.pt"
-#   • Saves final weights to user‑specified path (default "burst_deblur_final.pt")
-# ------------------------------------------------------------
-
 import os, glob, random
 import torch
 import torch.nn as nn
@@ -18,12 +9,10 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision.transforms.functional import resize, crop
 from tqdm import tqdm
 from reformer_pytorch import Reformer
-# 1) add this import near the other imports
 from torchvision.transforms.functional import gaussian_blur
 import random
 import numpy as np
 from blur_generator import generate_synthetic_burst, add_gaussian_noise, apply_motion_blur
-# add near your other imports
 from pytorch_msssim import ssim
 from torch.cuda.amp import autocast, GradScaler
 import math
@@ -84,11 +73,11 @@ class BurstDeblurNet(nn.Module):
 
         # ---------- bottleneck ----------
         self.conv3 = nn.Conv2d(base*2, base*4, 3, 1, 1)
-        self.ref3 = Reformer(       # attention runs at 64² tokens
+        self.ref3 = Reformer(
             dim         = base*4,
             depth       = 4,
             heads       = heads,
-            bucket_size = bucket,   # 64 is OK for 4096 tokens
+            bucket_size = bucket,
             causal      = False,
             )
 
@@ -103,12 +92,12 @@ class BurstDeblurNet(nn.Module):
 
     @staticmethod
     def _map2seq(x):
-        # (B,C,H,W) → (B, H*W, C)
+        # (B,C,H,W) -> (B, H*W, C)
         return x.permute(0, 2, 3, 1).reshape(x.size(0), -1, x.size(1))
 
     @staticmethod
     def _seq2map(x, H, W):
-        # (B, H*W, C) → (B,C,H,W)
+        # (B, H*W, C) -> (B,C,H,W)
         return x.reshape(x.size(0), H, W, -1).permute(0, 3, 1, 2)
 
     # ---------- forward ----------
@@ -117,7 +106,7 @@ class BurstDeblurNet(nn.Module):
         x = burst.view(B*T, C, H, W)
 
         e1 = F.relu(self.conv1(x))
-        seq = self._map2seq(e1)          # use self._
+        seq = self._map2seq(e1)
         seq = self.ref1(seq)
         e1  = self._seq2map(seq, H, W)
         p1  = self.pool1(e1)
@@ -185,7 +174,7 @@ def synth_burst(img: torch.Tensor, num_variants: int = 7):
         # ---- blur & noise pipeline ----
         g_blur  = gaussian_blur(img, kernel_size=g_k, sigma=g_sigma)        # Gaussian blur
         m_blur  = apply_motion_blur(g_blur, kernel_size=m_k, angle=m_angle) # Motion blur
-        final   = add_gaussian_noise(m_blur, std=n_std)                      # Add noise
+        final   = add_gaussian_noise(m_blur, std=n_std)                      # Adds noise
 
         burst.append(final)
     return burst
@@ -198,7 +187,7 @@ def cutblur(img_blur, img_sharp, alpha=0.7):
     Returns two tensors: mixed_input, mixed_target.
     """
     if random.random() > 0.5:
-        return img_blur, img_sharp          # no change
+        return img_blur, img_sharp
     _, h, w = img_blur.shape
     cut_ratio = random.uniform(0.3, alpha)
     ch, cw   = int(h * cut_ratio), int(w * cut_ratio)
@@ -220,7 +209,7 @@ class PatchDiscriminator(nn.Module):
             nn.Conv2d(ch_in,   base,     4, 2, 1), nn.LeakyReLU(0.2, True),
             nn.Conv2d(base,    base*2,   4, 2, 1), nn.BatchNorm2d(base*2), nn.LeakyReLU(0.2, True),
             nn.Conv2d(base*2,  base*4,   4, 2, 1), nn.BatchNorm2d(base*4), nn.LeakyReLU(0.2, True),
-            nn.Conv2d(base*4,  1,        3, 1, 1)   # logits
+            nn.Conv2d(base*4,  1,        3, 1, 1)
         )
     def forward(self, x):
         return self.net(x)
@@ -330,11 +319,11 @@ def train_dataset(
             else:
                 print(f"[WARN] resume flag set for {name} but {ckpt} not found – starting fresh")
         if name == "Fine-tune":
-            # cosine from 5 e-5 → 3 e-6, no warm restarts
+            # cosine from 5 e-5 -> 3 e-6, no warm restarts
             sched = optim.lr_scheduler.CosineAnnealingLR(
                         g_opt, T_max=epochs, eta_min=3e-6)
-        else:                               # Pre-train
-            # same shape, slightly higher floor
+        else:
+
             sched = optim.lr_scheduler.CosineAnnealingLR(
                         g_opt, T_max=epochs, eta_min=5e-6)
 
@@ -363,7 +352,7 @@ def train_dataset(
                     10: 0.002}
         λ_reblur_max = 0.35
         λ_reblur_delay = 20         # delay reblur loss start until ep ≥ 8
-        λ_reblur_ramp = 6          # gradual ramp from 0 → 0.5 over next 6 epochs
+        λ_reblur_ramp = 6          # gradual ramp from 0 -> 0.5 over next 6 epochs
 
 
         print(f"=== {name}: {epochs} epochs, lr={lr:.1e} ===")
@@ -443,7 +432,7 @@ def train_dataset(
             # -------- SSIM / edge blend (Option C) --------
             ssim_w0 = 1.0                           # start weight
             decay   = (1 - ep / epochs)**2          # quadratic falloff
-            ssim_w  = ssim_w0 * decay               # → 0 at the final epoch
+            ssim_w  = ssim_w0 * decay               # -> 0 at the final epoch
 
 
 
@@ -470,21 +459,21 @@ def train_dataset(
                 fake = model(burst)
                 ss = 1 - ms_ssim(fake, sharp,
                  data_range=1.0,
-                 win_size=7)     # ← smaller window
+                 win_size=7)     # <- smaller window
 
                 tot_ssim += ss.item()
                 ed   = F.l1_loss(sobel(fake), sobel(sharp))
                 tot_edge += ed.item()
                 g_loss = ssim_w * ss + (1 - ssim_w) * ed
 
-                lp = lpips_fn(fake, sharp).mean()      # ← compute every batch
+                lp = lpips_fn(fake, sharp).mean()      # compute every batch
                 tot_lpips += lp.item()                 # log it
-                if (step % lpips_every) == 0:          # keep the old weighting rule
+                if (step % lpips_every) == 0:
                     g_loss += lpips_w * lp
                 if ep >= 12:                               # “late” phase trigger
                     pix_w     = 0.07                       # 0.05–0.10 typical
                     pix_loss  = F.l1_loss(fake, sharp)
-                    tot_pix  += pix_loss.item()            # add this only if you log it
+                    tot_pix  += pix_loss.item()
                     g_loss   += pix_w * pix_loss
 
                 # --- NEW reblur-guided loss ---
@@ -501,7 +490,7 @@ def train_dataset(
                 reblur_val = loss_reblur.item()
                 g_loss += λ_reblur * loss_reblur
                 loss_reg = (re_k ** 2).mean()
-                g_loss += 0.0001 * loss_reg  # You can tune this weight later
+                g_loss += 0.0001 * loss_reg
 
 
                 if adv_on:
@@ -529,7 +518,7 @@ def train_dataset(
             avg_edge   = tot_edge   / n_batches
             avg_lpips  = tot_lpips  / n_batches
             avg_reblur = tot_reblur / n_batches
-            avg_gan    = tot_gan    / n_batches   # safe even if tot_gan==0
+            avg_gan    = tot_gan    / n_batches
             avg_pix = tot_pix / n_batches
 
             # -------------- VALIDATION --------------
@@ -544,7 +533,7 @@ def train_dataset(
 
             # LR step + freeze
             if not lr_frozen:
-                sched.step()                                        # keep stepping
+                sched.step()
                 curr_lr = g_opt.param_groups[0]["lr"]
                 if curr_lr <= min_lr_freeze:
                     lr_frozen = True
