@@ -68,6 +68,8 @@ python reblurkernalnet.py \
   --device     cuda
 ```
 
+
+
 ### Typical flags
 
 | Flag                           | Default          | Description              |
@@ -79,6 +81,22 @@ python reblurkernalnet.py \
 | `--dry_run`                    | *off*            | Print schedule then exit |
 
 > **Early‑stopping**   Add `--patience 10` to quit when val LPIPS stops improving for 10 epochs.
+
+### How to run
+1. `cd` to `model`
+    ```
+    cd model
+    ```
+2. Activate .venv to use GPU
+    ```
+    .\.venv\Scripts\Activate
+    ```
+3. Run the model
+  ```
+  python reblurkernalnet.py
+  ```
+4. While running, look at Terminal to see results. Press `Ctrl + c` in the terminal to stop to make any adjustments to model parameters.
+
 
 ---
 
