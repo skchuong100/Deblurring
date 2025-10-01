@@ -9,7 +9,7 @@
 ## 1 · Model Overview
 
 * **Architecture**  Two‑scale U‑Net with **Reformer attention** and an optional **PatchGAN** discriminator. Recovers a sharp frame from 7‑frame burst inputs.
-* **Loss stack**  `LPIPS + (1‑SSIM) + edge‑L1 + re‑blur consistency + (adversarial optional) + late pixel‑L1 tail` with dynamic weighting.
+* **Loss stack**  `LPIPS (↓ better) + (1-SSIM) (↑ better for SSIM itself) + edge-L1 (↓ better) + re-blur consistency + (adversarial optional) + late pixel-L1 tail` with dynamic weighting.
 * **Training phases**
 
   1. **Pre‑train** – synthetic bursts, λ\_adv = 0, λ\_reblur ramps to 0.2.
@@ -102,11 +102,11 @@ python reblurkernalnet.py \
 
 ## 5 · Results Summary
 
-| Metric           | Baseline (Hybrid) | ReblurKernelNet (this repo) |
-| ---------------- | ----------------- | --------------------------- |
-| **val LPIPS**    |  0.51             | **0.052**                   |
-| **val SSIM**     |  0.98             | **0.99**                    |
-| **avg pix (L1)** |  0.026            | **0.021**                   |
+| Metric           | Direction      | Baseline (Hybrid) | ReblurKernelNet (this repo) |
+| ---------------- | -------------- | ----------------- | --------------------------- |
+| **val LPIPS**    | ↓ lower = better | 0.51              | **0.052**                   |
+| **val SSIM**     | ↑ higher = better | 0.98              | **0.99**                    |
+| **avg pix (L1)** | ↓ lower = better | 0.026             | **0.021**                   |
 
 Numbers correspond to the checkpoint saved at fine‑tune epoch 72 (`checkpoints/reblurkernalnet_best.pt`).
 
@@ -127,9 +127,10 @@ If only one checkpoint exists, point both args to the same file.
 
 ---
 
-## 7. Logs & Checkpoints
-
-* Validation **LPIPS** and **SSIM** printed at the end of every epoch.
+* Validation metrics are printed at the end of every epoch:
+  * **LPIPS (↓)** – lower means more perceptually similar to the sharp reference.
+  * **SSIM (↑)** – higher means more structurally similar.
+  * **Pixel L1 (↓)** – lower means closer at raw intensity level.
 
 ---
 
